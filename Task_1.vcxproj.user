@@ -1,19 +1,19 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LocalDebuggerCommandArguments>D:\ELEC4622\slot2\data\barbara.bmp D:\ELEC4622\data\2.bmp 5.14 -w</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>D:\ELEC4622\data\1.bmp D:\ELEC4622\data\v_h.bmp 80 -w</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LocalDebuggerCommandArguments>D:\ELEC4622\slot2\data\barbara.bmp D:\ELEC4622\data\2.bmp 5.14 -w</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>D:\ELEC4622\data\1.bmp D:\ELEC4622\data\v_h.bmp 80 -w</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>D:\ELEC4622\slot2\data\barbara.bmp D:\ELEC4622\data\2.bmp 5.14 -w</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>D:\ELEC4622\data\1.bmp D:\ELEC4622\data\v_h.bmp 80 -w</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommandArguments>D:\ELEC4622\slot2\data\barbara.bmp D:\ELEC4622\data\2.bmp 5.14 -w</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>D:\ELEC4622\data\1.bmp D:\ELEC4622\data\v_h.bmp 80 -w</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>

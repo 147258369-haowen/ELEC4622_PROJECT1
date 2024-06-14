@@ -1,4 +1,4 @@
-/*****************************************************************************/
+﻿/*****************************************************************************/
 // File: image_comps.h
 // Author: David Taubman
 // Last Revised: 13 August, 2007
@@ -13,6 +13,7 @@
 #define WIDTH 5
 #define HIGHT 5
 #define PI 3.14159265
+//#define DEBUG
 typedef enum {
     CHECK_INPUT,
     LOAD_PICTURE,
@@ -27,6 +28,7 @@ typedef struct {
     int num_comp;
     io_byte* line;
     int MV_Dimension;
+    int GaussianDimension;
 }ImageParam;
 #define GAUSSIAN 1
 #define MOVINGAVERAGE 0
@@ -50,26 +52,34 @@ struct my_image_comp {
     void init(int height, int width, int border)
     {
         this->width = width;  this->height = height;  this->border = border;
-        stride = width + 2 * border;
+        stride = width + 2 * border;//扩展后的长宽
         if (handle != NULL)
             delete[] handle; // Delete mem allocated by any previous `init' call
         handle = new float[stride * (height + 2 * border)];
         buf = handle + (border * stride) + border;//the real picture start point
     }
     void perform_boundary_extension();
+    void apply_filter_modified_simo(my_image_comp* in, my_image_comp* out, float** inputfilter, int width);
+    void vector_filter(my_image_comp* in, int dimension);
+    void vector_horizontal_filter(my_image_comp* in, int dimension);
     // This function is implemented in "filtering_main.cpp".
 };
 void apply_filter(my_image_comp* in, my_image_comp* out);
-float FilterInit(float** input, int height, int width);
+float FilterNormalized(float** input, int dimension);
 void apply_filter_modified(my_image_comp* in, my_image_comp* out, float** inputfilter, int width);
+void apply_filter_modified_simo(my_image_comp* in, my_image_comp* out, float** inputfilter, int width);
 void unsharp_mask_filter(float** inputfilter, int width, float alpha);
 void CheckInput(int argc, char* argv[], float* sigma, int* filterChooseFlag);
 int OutputImage(bmp_out* out, my_image_comp* input_comps, my_image_comp** output_comps, io_byte** line, ImageParam* imageParam, char** argv);
 float GaussianFillKernel(int x, int y, float sigma);
-int LoadGaussianValue(float** matrix, float sigma);
+int LoadGaussianValue(float** matrix, float sigma, int dimension);
 float** allocateMatrix(int dimension);
 void FreeMatrix(float** matrix, int width);
 int VarianceLoopCheck(float sigma, ImageParam* imageParam);
 void LoadImage(bmp_in* in, my_image_comp** input_comps, my_image_comp** output_comps, io_byte** line,
     ImageParam* imageParam, int* filterChoose, char** argv);
 void MovingAverageSetValue(float** matrix, int dimension);
+int GaussianWindowDimensionChoose(float sigma);
+
+void horizontal(my_image_comp* in, my_image_comp* out, float** inputfilter, int width);
+void vertical(my_image_comp* in, my_image_comp* out, float** inputfilter, int width);

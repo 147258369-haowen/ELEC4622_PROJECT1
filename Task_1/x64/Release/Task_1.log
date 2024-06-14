@@ -1,0 +1,23 @@
+﻿C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(517,5): warning MSB8004: Output Directory does not end with a trailing slash.  This build instance will add the slash as it is required to allow proper evaluation of the Output Directory.
+  image_comps.cpp
+D:\ELEC4622\GitProject1\ELEC4622_PROJECT1\image_comps.cpp(280,11): warning C4305: 'initializing': truncation from 'double' to 'float'
+D:\ELEC4622\GitProject1\ELEC4622_PROJECT1\image_comps.cpp(280,29): warning C4305: 'initializing': truncation from 'double' to 'float'
+D:\ELEC4622\GitProject1\ELEC4622_PROJECT1\image_comps.cpp(281,8): warning C4305: 'initializing': truncation from 'double' to 'float'
+D:\ELEC4622\GitProject1\ELEC4622_PROJECT1\image_comps.cpp(281,34): warning C4305: 'initializing': truncation from 'double' to 'float'
+D:\ELEC4622\GitProject1\ELEC4622_PROJECT1\image_comps.cpp(283,8): warning C4305: 'initializing': truncation from 'double' to 'float'
+D:\ELEC4622\GitProject1\ELEC4622_PROJECT1\image_comps.cpp(283,38): warning C4305: 'initializing': truncation from 'double' to 'float'
+D:\ELEC4622\GitProject1\ELEC4622_PROJECT1\image_comps.cpp(284,11): warning C4305: 'initializing': truncation from 'double' to 'float'
+D:\ELEC4622\GitProject1\ELEC4622_PROJECT1\image_comps.cpp(284,29): warning C4305: 'initializing': truncation from 'double' to 'float'
+D:\ELEC4622\GitProject1\ELEC4622_PROJECT1\image_comps.cpp(325,22): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+D:\ELEC4622\GitProject1\ELEC4622_PROJECT1\image_comps.cpp(330,22): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+D:\ELEC4622\GitProject1\ELEC4622_PROJECT1\image_comps.cpp(442,23): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+D:\ELEC4622\GitProject1\ELEC4622_PROJECT1\image_comps.cpp(533,37): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+D:\ELEC4622\GitProject1\ELEC4622_PROJECT1\image_comps.cpp(534,35): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+D:\ELEC4622\GitProject1\ELEC4622_PROJECT1\image_comps.cpp(535,42): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+D:\ELEC4622\GitProject1\ELEC4622_PROJECT1\image_comps.cpp(535,36): warning C4244: 'initializing': conversion from 'float' to 'int', possible loss of data
+  Generating code
+  0 of 34 functions ( 0.0%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    0 functions had inline decision re-evaluated but remain unchanged
+  Finished generating code
+  Task_1.vcxproj -> D:\ELEC4622\bin\Task_1.exe

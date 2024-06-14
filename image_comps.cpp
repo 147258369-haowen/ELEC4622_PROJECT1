@@ -9,6 +9,8 @@
 #include "io_bmp.h"
 #include "image_comps.h"
 #include <iostream>
+#include <emmintrin.h> // Include SSE2 processor intrinsic functions
+#include <pmmintrin.h>
 /* ========================================================================= */
 /*                 Implementation of `my_image_comp' functions               */
 /* ========================================================================= */
@@ -83,23 +85,100 @@ void apply_filter(my_image_comp* in, my_image_comp* out)
             *op = sum;
         }
 }
-float FilterInit(float** input, int height, int width) {
+void horizontal(my_image_comp* in, my_image_comp* out, float** inputfilter, int width) {
+
+    int filter_extent = (width - 1) / 2;
+    int filter_dim = width;
+    int filter_taps = width * width;
+    float* filter_buf = new float[filter_taps];
+    float* mirror_psf = filter_buf + (filter_dim * filter_extent) + filter_extent;//中间点
+    float temp = 0.0f;
+    for (int i = -filter_extent; i <= filter_extent; i++) {//加载卷积核
+        for (int j = -filter_extent; j <= filter_extent; j++) {
+            mirror_psf[i * filter_dim + j] = inputfilter[i + filter_extent][j + filter_extent];
+        }
+    }
+    
+    for (int j = -filter_extent; j <= filter_extent; j++) {
+        temp += mirror_psf[j];
+    }
+    if (temp > 1.03f || temp < 0.98) {
+        for (int j = -filter_extent; j <= filter_extent; j++) {
+            mirror_psf[j] = (mirror_psf[j] * (1.0f / temp));
+        }
+    }
+
+    for (int r = 0; r < out->height; r++)//进行卷积操作
+        for (int c = 0; c < out->width; c++)
+        {
+            float* ip = in->buf + r * in->stride + c;
+            float* op = out->buf + r * out->stride + c;
+            //mirror_psf = mirror_psf + r * out->stride + c;
+            float sum = 0.0F;
+           // for (int y = -filter_extent; y <= filter_extent; y++)//列
+            for (int x = -filter_extent; x <= filter_extent; x++)//行
+            {
+                sum += ip[x] * mirror_psf[x];
+            }
+            *op = sum;
+        }
+    delete[] filter_buf;
+}
+void vertical(my_image_comp* in, my_image_comp* out, float** inputfilter, int width) {
+
+    int filter_extent = (width - 1) / 2;
+    int filter_dim = width;
+    int filter_taps = (2* filter_extent + 1);
+    float* filter_buf = new float[filter_taps];
+    float* mirror_psf = filter_buf  + filter_extent;//中间点
+    float temp = 0.0f;
+    for (int j = -filter_extent; j <= filter_extent; j++) {
+        mirror_psf[j] = inputfilter[(width-1)/2][j + filter_extent];
+        temp += mirror_psf[j];
+    }
+    if (temp > 1.03f || temp <0.98) {
+        for (int j = -filter_extent; j <= filter_extent; j++) {
+            mirror_psf[j] = (mirror_psf[j] * (1.0f / temp));
+        }   
+    }
+
+    for (int r = 0; r < out->height; r++)//进行卷积操作
+        for (int c = 0; c < out->width; c++)
+        {
+            float* ip = in->buf + r * in->stride + c;
+            float* op = out->buf + r * out->stride + c;
+
+            float sum = 0.0F;
+ 
+            for (int y = -filter_extent; y <= filter_extent; y++)//
+            {
+                sum += ip[y* in->stride] * mirror_psf[y];
+            }
+            *op = sum;
+        }
+    delete[] filter_buf;
+}
+float FilterNormalized(float** input, int dimension) {
     float sum = 0;
     float temp = 0;
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
+#ifdef DEBUG
+    printf("After mormalize:\r\n");
+#endif
+    for (int i = 0; i < dimension; i++) {
+        for (int j = 0; j < dimension; j++) {
             sum += input[i][j];
         }
     }
-    if (sum != 1) {
-        temp = (1 / sum);
-        for (int i = 0; i < height; i++) {
-            for (int j = 0; j < width; j++) {
-                input[i][j] = input[i][j] * temp;
-            }
+    for (int i = 0; i < dimension; ++i) {
+        for (int j = 0; j < dimension; ++j) {
+            input[i][j] /= sum;
+#ifdef DEBUG
+            printf("%f,", input[i][j]);
+#endif 
         }
-        return temp;
-
+#ifdef DEBUG
+        printf("\n");
+#endif 
     }
     return 1;
 }
@@ -127,6 +206,53 @@ void apply_filter_modified(my_image_comp* in, my_image_comp* out, float** inputf
         }
     delete[] filter_buf;
 }
+void my_image_comp:: apply_filter_modified_simo(my_image_comp* in, my_image_comp* out, float** inputfilter, int width) {
+    int filter_extent = (width - 1) / 2;
+    int filter_dim = width;
+    int filter_taps = width * width;
+
+    __m128* filter_buf = (__m128*) _mm_malloc(filter_taps * sizeof(__m128), 16);
+    __m128* mirror_psf = filter_buf + (filter_dim * filter_extent) + filter_extent; // 中间点
+
+    for (int i = -filter_extent; i <= filter_extent; i++) { // 加载卷积核
+        for (int j = -filter_extent; j <= filter_extent; j++) {
+            float filter_value = inputfilter[i + filter_extent][j + filter_extent];
+            mirror_psf[i * filter_dim + j] = _mm_set_ps1(filter_value); // 将单个float值转换为__m128
+        }
+    }
+
+    // 卷积操作
+    for (int r = 0; r < out->height; r++) {
+        for (int c = 0; c < out->width; c++) {
+            float* ip = in->buf + r * in->stride + c;
+            float* op = out->buf + r * out->stride + c;
+            __m128 sum = _mm_setzero_ps(); // 初始化为0的__m128类型
+            for (int y = -filter_extent; y <= filter_extent; y++) { // 列
+                for (int x = -filter_extent; x <= filter_extent; x++) { // 行
+                    // 处理边界条件
+                    int yy = r + y;
+                    int xx = c + x;
+                    if (yy < 0) yy = 0;
+                    if (yy >= in->height) yy = in->height - 1;
+                    if (xx < 0) xx = 0;
+                    if (xx >= in->width) xx = in->width - 1;
+
+                    float pixel_value = in->buf[yy * in->stride + xx];
+                    __m128 ip_val = _mm_set_ps1(pixel_value); // 将ip的值加载为__m128
+                    sum = _mm_add_ps(sum, _mm_mul_ps(ip_val, mirror_psf[y * filter_dim + x]));
+                }
+            }
+            // 将__m128的值合并成一个float
+            float result[4];
+            _mm_storeu_ps(result, sum);
+            *op = result[0] + result[1] + result[2] + result[3];
+        }
+    }
+
+    // 使用完毕后记得释放内存
+    _mm_free(filter_buf);
+}
+
 void unsharp_mask_filter(float** inputfilter, int width, float alpha) {
     float* impulseSignal = new float[width * width];
 
@@ -225,7 +351,7 @@ void LoadImage(bmp_in* in, my_image_comp** input_comps, my_image_comp** output_c
         *output_comps = new my_image_comp[num_comps];
         if (*filterChoose) {//gaussian
             for (n = 0; n < num_comps; n++)
-                (*input_comps)[n].init(height, width, 4); // Leave a border of 4
+                (*input_comps)[n].init(height, width, (imageParam->GaussianDimension-1)/2); // Leave a border of 4
         }
         else {
             for (n = 0; n < num_comps; n++)
@@ -313,24 +439,32 @@ int OutputImage(bmp_out* out, my_image_comp* input_comps, my_image_comp** output
     return 0;
 }
 float GaussianFillKernel(int x, int y, float sigma) {
-    float coffienct = 1.0f / (2.0f*PI*sigma*sigma);
-    float e_part = exp(-(x * x + y * y) / 2.0f * sigma * sigma);
-    return coffienct * e_part;
+    float coefficient = 1.0f / (2.0f * PI * sigma * sigma);
+    float e_part = exp(-((float)x * (float)x + (float)y * (float)y) / (2.0f * sigma * sigma));
+    return coefficient * e_part;
 }
-
-int LoadGaussianValue(float** matrix, float sigma) {
-    int x_offset =((WIDTH - 1) / 2);
-    int y_offset = ((HIGHT - 1) / 2);
-    int x = (WIDTH - 1);
+int GaussianWindowDimensionChoose(float sigma) {
+    float windowSize = 2 * (3 * sigma) + 1;
+    int dimension = (int)windowSize;
+    return dimension;
+}
+int LoadGaussianValue(float** matrix, float sigma,int dimension) {
+    int x_offset =((dimension - 1) / 2);
+    int y_offset = ((dimension - 1) / 2);
+    int x = (dimension - 1);
     int y = 0;
     for (int i = -x_offset; i <= x_offset; i++) {
         for (int j = -y_offset; j <= y_offset; j++) {
             matrix[x][y] = GaussianFillKernel(i, j,sigma);
+#ifdef DEBUG
             printf("%f,", matrix[x][y]);
+#endif
             x --;
         }
+#ifdef DEBUG
         printf("\n");
-        x = (WIDTH - 1);
+#endif
+        x = (dimension - 1);
         y++;
     }
 
@@ -414,6 +548,90 @@ void MovingAverageSetValue(float** matrix,int dimension) {
         }
     }
 }
+void my_image_comp::vector_filter(my_image_comp* in,int dimension)
+{
+//#define FILTER_EXTENT 4
+//#define FILTER_TAPS (2*FILTER_EXTENT+1)
+    int FILTER_EXTENT_ = (dimension-1)/2;//半径
+    int FILTER_TAPS_ = (2 * FILTER_EXTENT_ + 1);
+    // Create the vertical filter PSF as a local array on the stack.
+    __m128* filter_buf = (__m128*)_mm_malloc(FILTER_TAPS_ * sizeof(__m128), 16);
+    
+    __m128* mirror_psf = filter_buf + FILTER_EXTENT_;//中心点
+    // `mirror_psf' points to the central tap in the filter
+    for (int t = -FILTER_EXTENT_; t <= FILTER_EXTENT_; t++)
+        mirror_psf[t] = _mm_set1_ps(1.0F / FILTER_TAPS_);
+
+    // Check for consistent dimensions
+    assert(in->border >= FILTER_EXTENT_);
+    assert((this->height <= in->height) && (this->width <= in->width));
+    assert(((stride & 3) == 0) && ((in->stride & 3) == 0));
+    int vec_stride_in = in->stride / 4;
+    int vec_stride_out = this->stride / 4;
+    int vec_width_out = (this->width + 3) / 4; // Big enough to cover the width
+
+    // Do the filtering
+    __m128* line_out = (__m128*) buf;
+    __m128* line_in = (__m128*)(in->buf);
+    for (int r = 0; r < height; r++,
+        line_out += vec_stride_out, line_in += vec_stride_in)
+        for (int c = 0; c < vec_width_out; c++)
+        {
+            __m128* ip = (line_in + c) - vec_stride_in * FILTER_EXTENT_;
+            __m128 sum = _mm_setzero_ps();
+            for (int y = -FILTER_EXTENT_; y <= FILTER_EXTENT_; y++, ip += vec_stride_in)
+                sum = _mm_add_ps(sum, _mm_mul_ps(mirror_psf[y], *ip));
+            line_out[c] = sum;
+        }
+}
+void my_image_comp::vector_horizontal_filter(my_image_comp* in, int dimension)
+{
+    int FILTER_EXTENT_ = (dimension - 1) / 2; // 半径
+    int FILTER_TAPS_ = (2 * FILTER_EXTENT_ + 1);
+
+    // 动态分配垂直滤波PSF作为堆上的本地数组。
+    __m128* filter_buf = (__m128*)_mm_malloc(FILTER_TAPS_ * sizeof(__m128), 16);
+    __m128* mirror_psf = filter_buf + FILTER_EXTENT_; // 中心点
+
+    // `mirror_psf' 指向滤波器的中心抽头
+    for (int t = -FILTER_EXTENT_; t <= FILTER_EXTENT_; t++)
+        mirror_psf[t] = _mm_set1_ps(1.0F / FILTER_TAPS_);
+
+    // 检查维度是否一致
+    assert(in->border >= FILTER_EXTENT_);
+    assert((this->height <= in->height) && (this->width <= in->width));
+    assert(((stride & 3) == 0) && ((in->stride & 3) == 0));
+    int vec_stride_in = in->stride / 4;
+    int vec_stride_out = this->stride / 4;
+    int vec_width_out = (this->width + 3) / 4; // 足够覆盖宽度
+
+    // 进行滤波操作
+    __m128* line_out = (__m128*)buf;
+    __m128* line_in = (__m128*)(in->buf);
+    for (int r = 0; r < height; r++,
+        line_out += vec_stride_out, line_in += vec_stride_in)
+    {
+        for (int c = 0; c < vec_width_out; c++)
+        {
+            __m128 sum = _mm_setzero_ps();
+            for (int x = -FILTER_EXTENT_; x <= FILTER_EXTENT_; x++)
+            {
+                int index = c + x;
+                // 确保索引在有效范围内
+                if (index >= 0 && index < vec_width_out)
+                {
+                    __m128* ip = line_in + index;
+                    sum = _mm_add_ps(sum, _mm_mul_ps(mirror_psf[x], *ip));
+                }
+            }
+            line_out[c] = sum;
+        }
+    }
+
+    // 释放动态分配的内存
+    _mm_free(filter_buf);
+}
+
 //{ 0, 1, 2, 3, 4 }
 //{ 0, 1, 2, 3, 4 }
 //{ 0, 1, 2, 3, 4 }
