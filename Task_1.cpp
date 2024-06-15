@@ -3,9 +3,6 @@
 #include <iostream>
 #include "io_bmp.h"
 #include "image_comps.h"
-extern float h1[5][5];
-extern float h2[9][9];
-extern float h3[9][9];
 int main(int argc, char* argv[]) {
     STATE state = CHECK_INPUT;
     int filterChoose = 0;
@@ -21,7 +18,7 @@ int main(int argc, char* argv[]) {
     while (true) {
         switch (state) {
         case CHECK_INPUT:
-            CheckInput(argc, argv,&sigma,&filterChoose);
+            CheckInput(argc, argv,&sigma,&filterChoose,&imageParam);
             state = filterChoose ? LOAD_PICTURE : MOVING_AVERAGE_CHECK;
             break;
         case LOAD_PICTURE:
@@ -34,7 +31,6 @@ int main(int argc, char* argv[]) {
             printf("Gaussan dimension: %d\r\n", imageParam.GaussianDimension);
             matrix = allocateMatrix(imageParam.GaussianDimension);
             LoadGaussianValue(matrix, sigma, imageParam.GaussianDimension);// load the gaussian value to the matrix
-            //FilterNormalized(matrix, imageParam.GaussianDimension);//normalize
             for (int n = 0; n < imageParam.num_comp; n++)
                 input_comps[n].perform_boundary_extension();
             for (int n = 0; n < imageParam.num_comp; n++)
@@ -48,7 +44,8 @@ int main(int argc, char* argv[]) {
                 vertical(temp_comps + n, output_comps + n, matrix, imageParam.GaussianDimension);
             /*for (int n = 0; n < imageParam.num_comp; n++)
                 apply_filter_modified(input_comps + n, output_comps + n, matrix, imageParam.GaussianDimension);*/
-            state = OUTPUT_PICTURE;
+            state = (imageParam.gradientFlag) ? IMAGE_GRADIENT : OUTPUT_PICTURE;
+            delete[] temp_comps;
             break;
         case MOVING_AVERAGE_CHECK:
             VarianceLoopCheck(sigma, &imageParam);
@@ -68,6 +65,18 @@ int main(int argc, char* argv[]) {
                 horizontal(input_comps + n, temp_comps + n, matrix, imageParam.MV_Dimension);
             for (int n = 0; n < imageParam.num_comp; n++)
                 vertical(temp_comps + n, output_comps + n, matrix, imageParam.MV_Dimension);
+            state =(imageParam.gradientFlag)? IMAGE_GRADIENT:OUTPUT_PICTURE;
+            delete[] temp_comps;
+            break;
+        case IMAGE_GRADIENT:
+            printf("Gradient\r\n");
+            temp_comps = new  my_image_comp[imageParam.num_comp];
+            for (int n = 0; n < imageParam.num_comp; n++)
+                temp_comps[n].init(imageParam.height, imageParam.width, 1); // Don't need a border for output
+            for (int n = 0; n < imageParam.num_comp; n++)
+                temp_comps[n].GrradientHorizontalFilter(output_comps + n,3,imageParam.alpha);
+            for (int n = 0; n < imageParam.num_comp; n++)
+                output_comps[n].GrradientverticalFilter(temp_comps + n,3, imageParam.alpha);
             state = OUTPUT_PICTURE;
             break;
         case OUTPUT_PICTURE:

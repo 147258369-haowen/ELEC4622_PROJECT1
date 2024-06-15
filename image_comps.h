@@ -20,7 +20,8 @@ typedef enum {
     GAUSSIAN_FILTER,
     MOVING_AVERAGE,
     MOVING_AVERAGE_CHECK,
-    OUTPUT_PICTURE
+    OUTPUT_PICTURE,
+    IMAGE_GRADIENT
 }STATE;
 typedef struct {
     int width;
@@ -29,6 +30,8 @@ typedef struct {
     io_byte* line;
     int MV_Dimension;
     int GaussianDimension;
+    bool gradientFlag;
+    float alpha;
 }ImageParam;
 #define GAUSSIAN 1
 #define MOVINGAVERAGE 0
@@ -62,6 +65,8 @@ struct my_image_comp {
     void apply_filter_modified_simo(my_image_comp* in, my_image_comp* out, float** inputfilter, int width);
     void vector_filter(my_image_comp* in, int dimension);
     void vector_horizontal_filter(my_image_comp* in, int dimension);
+    void GrradientHorizontalFilter(my_image_comp* in, int dimension,int alpha);
+    void GrradientverticalFilter(my_image_comp* in, int width, int alpha);
     // This function is implemented in "filtering_main.cpp".
 };
 void apply_filter(my_image_comp* in, my_image_comp* out);
@@ -69,7 +74,7 @@ float FilterNormalized(float** input, int dimension);
 void apply_filter_modified(my_image_comp* in, my_image_comp* out, float** inputfilter, int width);
 void apply_filter_modified_simo(my_image_comp* in, my_image_comp* out, float** inputfilter, int width);
 void unsharp_mask_filter(float** inputfilter, int width, float alpha);
-void CheckInput(int argc, char* argv[], float* sigma, int* filterChooseFlag);
+void CheckInput(int argc, char* argv[], float* sigma, int* filterChooseFlag, ImageParam* param);
 int OutputImage(bmp_out* out, my_image_comp* input_comps, my_image_comp** output_comps, io_byte** line, ImageParam* imageParam, char** argv);
 float GaussianFillKernel(int x, int y, float sigma);
 int LoadGaussianValue(float** matrix, float sigma, int dimension);

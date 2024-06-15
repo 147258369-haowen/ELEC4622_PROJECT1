@@ -18,7 +18,8 @@
 /*****************************************************************************/
 /*                  my_image_comp::perform_boundary_extension                */
 /*****************************************************************************/
-
+float h1D[3] = { -0.5, 0.0, 0.5 };
+float h2D[3] = { -0.5, 0.0, 0.5 };
 void my_image_comp::perform_boundary_extension()
 {
     int r, c;
@@ -311,7 +312,8 @@ float h3[9][9]{
 /*                                    main                                   */
 /*****************************************************************************/
 
-void CheckInput(int argc, char* argv[],float* sigma ,int* filterChooseFlag) {
+void CheckInput(int argc, char* argv[],float* sigma ,int* filterChooseFlag, ImageParam* param) {
+    param->gradientFlag = false;
     if (argc < 4)
     {
         fprintf(stderr, "Usage: %s <in bmp file> <out bmp file> <sigma> (optional)<-w>\n", argv[0]);
@@ -321,14 +323,35 @@ void CheckInput(int argc, char* argv[],float* sigma ,int* filterChooseFlag) {
         fprintf(stderr, "The sigma value is not correct\n");
         exit(-1);
     }
+    *sigma = atof(argv[3]);
     if (argc == 4) {
-        *sigma = atof(argv[3]);
+       
         fprintf(stdout, "Gaussian\n");
         *filterChooseFlag = GAUSSIAN;
     }
-    else if (argc == 5 && strcmp(argv[4],"-w\n")) {
-        *sigma = atof(argv[3]);
+    else if (argc == 5 && !strcmp(argv[4],"-w")) {
+        printf("1\r\n");
         fprintf(stdout, "Moving average\n");
+        *filterChooseFlag = MOVINGAVERAGE;
+    }
+    else if (argc == 5 && (atof(argv[4]) > 0.0f)) {
+        printf("2\r\n");
+        param->alpha = atof(argv[4]);
+        if (param->alpha <= 0.0f) {
+            fprintf(stderr, "The alpha value is not correct\n");
+            exit(-1);
+        }
+        *filterChooseFlag = GAUSSIAN;
+        param->gradientFlag = true;
+    }
+    if (argc == 6) {
+        printf("3\r\n");
+        param->alpha = atof(argv[5]);
+        if (param->alpha <= 0.0f) {
+            fprintf(stderr, "The alpha value is not correct\n");
+            exit(-1);
+        }
+        param->gradientFlag = true;
         *filterChooseFlag = MOVINGAVERAGE;
     }
     
@@ -631,7 +654,50 @@ void my_image_comp::vector_horizontal_filter(my_image_comp* in, int dimension)
     // 释放动态分配的内存
     _mm_free(filter_buf);
 }
+void my_image_comp::GrradientHorizontalFilter(my_image_comp* in, int dimension,int alpha) {
+    int radius = (dimension - 1) / 2;
+    float* centralPoint = &h1D[1];
+    for (int r = 0; r < this->height; r++)//进行卷积操作
+        for (int c = 0; c < this->width; c++)
+        {
+            float* ip = in->buf + r * in->stride + c;
+            float* op = this->buf + r * this->stride + c;
+            //mirror_psf = mirror_psf + r * out->stride + c;
+            float sum = 0.00F;
+            // for (int y = -filter_extent; y <= filter_extent; y++)//列
+            for (int x = -radius; x <= radius; x++)//行
+            {
+                float temp = ip[x] * centralPoint[x];
+                sum += ((float)alpha * temp);
+            }
+            if (sum <= 0.0f) sum = 0.1f;
+            else if (sum >= 255.0f) sum = 254.0f;
+            *op = sum;
+        }
 
+}
+void my_image_comp::GrradientverticalFilter(my_image_comp* in, int width,int alpha) {
+    int radius = (width - 1) / 2;
+    float* centralPoint = &h2D[1];
+    for (int r = 0; r < this->height; r++)//进行卷积操作
+        for (int c = 0; c < this->width; c++)
+        {
+            float* ip = in->buf + r * in->stride + c;
+            float* op = this->buf + r * this->stride + c;
+
+            float sum = 0.00F;
+
+            for (int y = -radius; y <= radius; y++)//
+            {
+                float temp = ip[y * in->stride] * centralPoint[y];
+                sum += ((float)alpha* temp);
+            }
+            if (sum <= 0.0f) sum = 0.1f;
+            else if (sum >= 255.0f) sum = 254.0f;
+            
+            *op = sum;
+        }
+}
 //{ 0, 1, 2, 3, 4 }
 //{ 0, 1, 2, 3, 4 }
 //{ 0, 1, 2, 3, 4 }

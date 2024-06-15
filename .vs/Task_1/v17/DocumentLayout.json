@@ -15,12 +15,12 @@
       "RelativeMoniker": "D:0:0:{0F33C840-2D64-4AAD-8C60-4727FEEF3ADF}|Task_1.vcxproj|solutionrelative:image_comps.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{0F33C840-2D64-4AAD-8C60-4727FEEF3ADF}|Task_1.vcxproj|D:\\ELEC4622\\GitProject1\\ELEC4622_PROJECT1\\io_bmp.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{0F33C840-2D64-4AAD-8C60-4727FEEF3ADF}|Task_1.vcxproj|solutionrelative:io_bmp.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{0F33C840-2D64-4AAD-8C60-4727FEEF3ADF}|Task_1.vcxproj|D:\\ELEC4622\\GitProject1\\ELEC4622_PROJECT1\\io_bmp.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{0F33C840-2D64-4AAD-8C60-4727FEEF3ADF}|Task_1.vcxproj|solutionrelative:io_bmp.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0F33C840-2D64-4AAD-8C60-4727FEEF3ADF}|Task_1.vcxproj|D:\\ELEC4622\\GitProject1\\ELEC4622_PROJECT1\\io_bmp.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{0F33C840-2D64-4AAD-8C60-4727FEEF3ADF}|Task_1.vcxproj|solutionrelative:io_bmp.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     }
   ],
   "DocumentGroupContainers": [
@@ -34,7 +34,7 @@
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 3,
               "Title": "io_bmp.cpp",
               "DocumentMoniker": "D:\\ELEC4622\\GitProject1\\ELEC4622_PROJECT1\\io_bmp.cpp",
               "RelativeDocumentMoniker": "io_bmp.cpp",
@@ -47,7 +47,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "io_bmp.h",
               "DocumentMoniker": "D:\\ELEC4622\\GitProject1\\ELEC4622_PROJECT1\\io_bmp.h",
               "RelativeDocumentMoniker": "io_bmp.h",
@@ -55,8 +55,7 @@
               "RelativeToolTip": "io_bmp.h",
               "ViewState": "AQIAAEIAAAAAAAAAAAAAAAAAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2024-06-14T01:00:05.814Z",
-              "EditorCaption": ""
+              "WhenOpened": "2024-06-14T01:00:05.814Z"
             },
             {
               "$type": "Document",
@@ -66,7 +65,7 @@
               "RelativeDocumentMoniker": "image_comps.h",
               "ToolTip": "D:\\ELEC4622\\GitProject1\\ELEC4622_PROJECT1\\image_comps.h",
               "RelativeToolTip": "image_comps.h",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAA8AAAAPAAAA",
+              "ViewState": "AQIAAB8AAAAAAAAAAIAwwDUAAAAFAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
               "WhenOpened": "2024-06-13T23:49:09.705Z",
               "EditorCaption": ""
@@ -79,7 +78,7 @@
               "RelativeDocumentMoniker": "image_comps.cpp",
               "ToolTip": "D:\\ELEC4622\\GitProject1\\ELEC4622_PROJECT1\\image_comps.cpp",
               "RelativeToolTip": "image_comps.cpp",
-              "ViewState": "AQIAAFYAAAAAAAAAAIAwwHEAAAA1AAAA",
+              "ViewState": "AQIAAJoCAAAAAAAAAAAAAK4CAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2024-06-13T12:44:44.321Z",
               "EditorCaption": ""
@@ -92,7 +91,7 @@
               "RelativeDocumentMoniker": "Task_1.cpp",
               "ToolTip": "D:\\ELEC4622\\GitProject1\\ELEC4622_PROJECT1\\Task_1.cpp",
               "RelativeToolTip": "Task_1.cpp",
-              "ViewState": "AQIAABAAAAAAAAAAAAAgwC8AAAAYAAAA",
+              "ViewState": "AQIAADYAAAAAAAAAAAAAAEwAAAA3AAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2024-06-13T12:42:29.732Z",
               "EditorCaption": ""
