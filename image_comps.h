@@ -14,6 +14,7 @@
 #define HIGHT 5
 #define PI 3.14159265
 //#define DEBUG
+#define LAPLACIAN 0
 typedef enum {
     CHECK_INPUT,
     LOAD_PICTURE,
@@ -21,7 +22,8 @@ typedef enum {
     MOVING_AVERAGE,
     MOVING_AVERAGE_CHECK,
     OUTPUT_PICTURE,
-    IMAGE_GRADIENT
+    IMAGE_GRADIENT,
+    LAPLACIAN_IMAGE
 }STATE;
 typedef struct {
     int width;
@@ -86,5 +88,5 @@ void LoadImage(bmp_in* in, my_image_comp** input_comps, my_image_comp** output_c
 void MovingAverageSetValue(float** matrix, int dimension);
 int GaussianWindowDimensionChoose(float sigma);
 
-void horizontal(my_image_comp* in, my_image_comp* out, float** inputfilter, int width);
-void vertical(my_image_comp* in, my_image_comp* out, float** inputfilter, int width);
+void horizontal(my_image_comp* in, my_image_comp* out, float** inputfilter, int width, int G_MF_flag);
+void vertical(my_image_comp* in, my_image_comp* out, float** inputfilter, int width, int G_MF_flag);

@@ -20,6 +20,11 @@
 /*****************************************************************************/
 float h1D[3] = { -0.5, 0.0, 0.5 };
 float h2D[3] = { -0.5, 0.0, 0.5 };
+float laplacianKernel[3][3] = {
+        { 0.0f,-1.0f,0.0f},
+        { -1.0f, 4.0f, -1.0f },
+        { 0.0f,-1.0f,0.0f}
+};
 void my_image_comp::perform_boundary_extension()
 {
     int r, c;
@@ -86,7 +91,19 @@ void apply_filter(my_image_comp* in, my_image_comp* out)
             *op = sum;
         }
 }
-void horizontal(my_image_comp* in, my_image_comp* out, float** inputfilter, int width) {
+
+void listshift(float* buffer, float** ptr, int width) {
+    static int flag = 0;
+    if (flag == (width - 1)) {
+        flag = 0;
+    }
+    else {
+        flag++;
+    }
+    *ptr = buffer + flag;
+
+}
+void horizontal(my_image_comp* in, my_image_comp* out, float** inputfilter, int width,int G_MF_flag) {
 
     int filter_extent = (width - 1) / 2;
     int filter_dim = width;
@@ -108,24 +125,47 @@ void horizontal(my_image_comp* in, my_image_comp* out, float** inputfilter, int 
             mirror_psf[j] = (mirror_psf[j] * (1.0f / temp));
         }
     }
-
+    int inital_flag = 0;
+    float sum = 0.0F;
+    float* buffer = new float[width];
+    float* bufptr = buffer;
     for (int r = 0; r < out->height; r++)//进行卷积操作
+
         for (int c = 0; c < out->width; c++)
         {
             float* ip = in->buf + r * in->stride + c;
             float* op = out->buf + r * out->stride + c;
             //mirror_psf = mirror_psf + r * out->stride + c;
-            float sum = 0.0F;
+            if (!G_MF_flag) {//gaussian
+                sum = 0.0F;
+            }        
            // for (int y = -filter_extent; y <= filter_extent; y++)//列
-            for (int x = -filter_extent; x <= filter_extent; x++)//行
-            {
-                sum += ip[x] * mirror_psf[x];
+            if (inital_flag == 0) {
+                for (int x = -filter_extent; x <= filter_extent; x++)//行
+                {
+                    sum += ip[x] * mirror_psf[x];
+                    *bufptr = ip[x] * mirror_psf[x];
+                    listshift(buffer,&bufptr,width);
+                }
+
             }
+            else {
+                sum += (ip[filter_extent] * mirror_psf[filter_extent]);
+                sum -= *bufptr;
+                *bufptr = (ip[filter_extent] * mirror_psf[filter_extent]);
+                listshift(buffer, &bufptr, width);
+            }
+
+            inital_flag = G_MF_flag ? 1 : 0;
             *op = sum;
+            if (c == (out->width - 1)) {
+                sum = 0;
+                inital_flag = 0;
+            }
         }
     delete[] filter_buf;
 }
-void vertical(my_image_comp* in, my_image_comp* out, float** inputfilter, int width) {
+void vertical(my_image_comp* in, my_image_comp* out, float** inputfilter, int width, int G_MF_flag) {
 
     int filter_extent = (width - 1) / 2;
     int filter_dim = width;
@@ -142,20 +182,43 @@ void vertical(my_image_comp* in, my_image_comp* out, float** inputfilter, int wi
             mirror_psf[j] = (mirror_psf[j] * (1.0f / temp));
         }   
     }
-
+    float* buffer = new float[width];
+    float* bufptr = buffer;
+    int inital_flag = 0;
+    float sum = 0.0F;
     for (int r = 0; r < out->height; r++)//进行卷积操作
         for (int c = 0; c < out->width; c++)
         {
-            float* ip = in->buf + r * in->stride + c;
-            float* op = out->buf + r * out->stride + c;
+            //float* ip = in->buf + r * in->stride + c;
+            //float* op = out->buf + r * out->stride + c;
+            float* ip = in->buf + c * in->stride + r;
+            float* op = out->buf + c * out->stride + r;
 
-            float sum = 0.0F;
- 
-            for (int y = -filter_extent; y <= filter_extent; y++)//
-            {
-                sum += ip[y* in->stride] * mirror_psf[y];
+            if (!G_MF_flag) {
+                sum = 0.0F;
             }
+            if (!inital_flag) {
+                for (int y = -filter_extent; y <= filter_extent; y++)//
+                {
+                    
+                    sum += ip[y * in->stride] * mirror_psf[y];
+                    *bufptr = ip[y * in->stride] * mirror_psf[y];
+                    listshift(buffer, &bufptr, width);
+                }
+            }
+            else {
+                sum += ip[filter_extent * in->stride] * mirror_psf[filter_extent];
+                sum -= *bufptr;
+                *bufptr = (ip[filter_extent * in->stride] * mirror_psf[filter_extent]);
+                listshift(buffer, &bufptr, width);
+            }
+
+            inital_flag = G_MF_flag ? 1:0;
             *op = sum;
+            if (c == (out->height - 1)) {
+                sum = 0;
+                inital_flag = 0;
+            }
         }
     delete[] filter_buf;
 }
@@ -677,8 +740,8 @@ void my_image_comp::GrradientHorizontalFilter(my_image_comp* in, int dimension,i
 
 }
 void my_image_comp::GrradientverticalFilter(my_image_comp* in, int width,int alpha) {
+    float* centralPoint = &h1D[1];
     int radius = (width - 1) / 2;
-    float* centralPoint = &h2D[1];
     for (int r = 0; r < this->height; r++)//进行卷积操作
         for (int c = 0; c < this->width; c++)
         {
