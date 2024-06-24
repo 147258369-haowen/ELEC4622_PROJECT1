@@ -155,13 +155,14 @@ void horizontal(my_image_comp* in, my_image_comp* out, float** inputfilter, int 
                 *bufptr = (ip[filter_extent] * mirror_psf[filter_extent]);
                 listshift(buffer, &bufptr, width);
             }
-
+            if (sum > 255) sum = 255;
+            else if (sum < 0) sum = 0;
             inital_flag = G_MF_flag ? 1 : 0;
             *op = sum;
-            if (c == (out->width - 1)) {
-                sum = 0;
-                inital_flag = 0;
-            }
+            //if (c == (out->width - 1)) {
+            //    sum = 0;
+            //    inital_flag = 0;
+            //}
         }
     delete[] filter_buf;
 }
@@ -186,8 +187,8 @@ void vertical(my_image_comp* in, my_image_comp* out, float** inputfilter, int wi
     float* bufptr = buffer;
     int inital_flag = 0;
     float sum = 0.0F;
-    for (int r = 0; r < out->height; r++)//进行卷积操作
-        for (int c = 0; c < out->width; c++)
+    for (int r = 0; r < out->width; r++)//进行卷积操作
+        for (int c = 0; c < out->height; c++)
         {
             //float* ip = in->buf + r * in->stride + c;
             //float* op = out->buf + r * out->stride + c;
@@ -212,13 +213,14 @@ void vertical(my_image_comp* in, my_image_comp* out, float** inputfilter, int wi
                 *bufptr = (ip[filter_extent * in->stride] * mirror_psf[filter_extent]);
                 listshift(buffer, &bufptr, width);
             }
-
+            if (sum > 255) sum = 255;
+            else if (sum < 0) sum = 0;
             inital_flag = G_MF_flag ? 1:0;
             *op = sum;
-            if (c == (out->height - 1)) {
+  /*          if (c == (out->height - 1)) {
                 sum = 0;
                 inital_flag = 0;
-            }
+            }*/
         }
     delete[] filter_buf;
 }
@@ -717,6 +719,79 @@ void my_image_comp::vector_horizontal_filter(my_image_comp* in, int dimension)
     // 释放动态分配的内存
     _mm_free(filter_buf);
 }
+void my_image_comp::SecondGrradientHorizontalFilter(my_image_comp* in, int dimension, ImageParam* imagP, int alpha) {
+    int radius = (dimension - 1) / 2;
+    float* centralPoint = &h1D[1];
+    my_image_comp* temp = new my_image_comp;
+    temp->init(this->height, this->width, 1);
+    float* outBuf = temp->buf;
+    float* inBuf = in->buf;
+    for (int i = 1; i <= 2; i++) {
+        for (int r = 0; r < this->height; r++) {  //进行卷积操作
+            for (int c = 0; c < this->width; c++)
+            {
+                float* ip = inBuf + r * in->stride + c;
+                float* op = outBuf + r * this->stride + c;
+                float sum = 0.00F;
+                for (int x = -radius; x <= radius; x++)//行
+                {
+                    float temp_ = ip[x] * centralPoint[x];
+                    if (i == 1) {
+                        sum += (temp_);//(float)alpha *
+                    }
+                    else {
+                        sum += ((float)alpha * temp_ + 128);
+                    }
+                    
+                }
+                if (sum <= 0.0f) sum = 0.0f;
+                else if (sum >= 255.0f) sum = 255.0f;
+                *op = sum;
+            }
+        }
+        outBuf = this->buf;
+        inBuf = temp->buf;
+    }
+    delete temp;
+
+}
+void my_image_comp::SecondGrradientverticalFilter(my_image_comp* in, int dimension, ImageParam* imagP, int alpha) {
+    float* centralPoint = &h2D[1];
+    int radius = (dimension - 1) / 2;
+    my_image_comp* temp_comp = new my_image_comp;
+    temp_comp->init(this->height, this->width, 1);
+    float* outBuf = temp_comp->buf;
+    float* inBuf = in->buf;
+    for (int i = 1; i <= 2; i++) {
+        for (int r = 0; r < this->width; r++) {//进行卷积操作
+            for (int c = 0; c < this->height; c++)
+            {
+                float* ip = inBuf + c * in->stride + r;
+                float* op = outBuf + c * this->stride + r;
+
+                float sum = 0.00F;
+
+                for (int y = -radius; y <= radius; y++)//
+                {
+                    float temp = ip[y * in->stride] * centralPoint[y];
+                    if (i == 1) {
+                        sum += ( temp);//(float)alpha *
+                    }
+                    else {
+                        sum += ((float)alpha * temp + 128);
+                    }
+                }
+                if (sum <= 0.0f) sum = 0.0f;
+                else if (sum >= 255.0f) sum = 255.0f;
+
+                *op = sum;
+            }
+        }
+        outBuf = this->buf;
+        inBuf = temp_comp->buf;
+    }
+    delete temp_comp;
+}
 void my_image_comp::GrradientHorizontalFilter(my_image_comp* in, int dimension,int alpha) {
     int radius = (dimension - 1) / 2;
     float* centralPoint = &h1D[1];
@@ -740,7 +815,7 @@ void my_image_comp::GrradientHorizontalFilter(my_image_comp* in, int dimension,i
 
 }
 void my_image_comp::GrradientverticalFilter(my_image_comp* in, int width,int alpha) {
-    float* centralPoint = &h1D[1];
+    float* centralPoint = &h2D[1];
     int radius = (width - 1) / 2;
     for (int r = 0; r < this->height; r++)//进行卷积操作
         for (int c = 0; c < this->width; c++)

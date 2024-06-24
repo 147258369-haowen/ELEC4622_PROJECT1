@@ -46,8 +46,6 @@ int main(int argc, char* argv[]) {
                 horizontal(input_comps + n, temp_comps + n, matrix, imageParam.GaussianDimension,0);
             for (int n = 0; n < imageParam.num_comp; n++)
                 vertical(temp_comps + n, output_comps + n, matrix, imageParam.GaussianDimension,0);
-            /*for (int n = 0; n < imageParam.num_comp; n++)
-                apply_filter_modified(input_comps + n, output_comps + n, matrix, imageParam.GaussianDimension);*/
             state = (imageParam.gradientFlag) ? IMAGE_GRADIENT : OUTPUT_PICTURE;
             delete[] temp_comps;
             break;
@@ -75,16 +73,26 @@ int main(int argc, char* argv[]) {
         case IMAGE_GRADIENT:
             printf("Gradient\r\n");
 #if LAPLACIAN == 1
-            for (int i = 0; i < 3; i++) {
-                for (int j = 0; j < 3; j++) {
-                    lapkernel[i][j] = laplacianKernel[i][j];
-                }
-            }
+            //for (int i = 0; i < 3; i++) {
+            //    for (int j = 0; j < 3; j++) {
+            //        lapkernel[i][j] = laplacianKernel[i][j];
+            //    }
+            //}
+            //temp_comps = new  my_image_comp[imageParam.num_comp];
+            //for (int n = 0; n < imageParam.num_comp; n++)
+            //    temp_comps[n].init(imageParam.height, imageParam.width, 1); // Don't need a border for output
+            //for (int n = 0; n < imageParam.num_comp; n++)
+            //    apply_filter_modified(output_comps+n, temp_comps +n, lapkernel,3);
+
             temp_comps = new  my_image_comp[imageParam.num_comp];
             for (int n = 0; n < imageParam.num_comp; n++)
                 temp_comps[n].init(imageParam.height, imageParam.width, 1); // Don't need a border for output
+            /************************************************************************************/
             for (int n = 0; n < imageParam.num_comp; n++)
-                apply_filter_modified(output_comps+n, temp_comps +n, lapkernel,3);
+                temp_comps[n].SecondGrradientHorizontalFilter(output_comps + n, 3,&imageParam, imageParam.alpha);
+            for (int n = 0; n < imageParam.num_comp; n++)
+                output_comps[n].SecondGrradientverticalFilter(temp_comps + n, 3,&imageParam, imageParam.alpha);
+            /************************************************************************************/
 #else 
             temp_comps = new  my_image_comp[imageParam.num_comp];
             for (int n = 0; n < imageParam.num_comp; n++)
@@ -98,7 +106,8 @@ int main(int argc, char* argv[]) {
             break;
         case OUTPUT_PICTURE:
 #if LAPLACIAN == 1
-            OutputImage(&out, input_comps, &temp_comps, &line, &imageParam, argv);
+            //OutputImage(&out, input_comps, &temp_comps, &line, &imageParam, argv);
+            OutputImage(&out, input_comps, &output_comps, &line, &imageParam, argv);
             bmp_in__close(&in);
             delete[] line;
             delete[] input_comps;
@@ -119,3 +128,13 @@ int main(int argc, char* argv[]) {
         }
     }
 }
+//for (int i = 0; i < 3; i++) {
+//    for (int j = 0; j < 3; j++) {
+//        lapkernel[i][j] = laplacianKernel[i][j];
+//    }
+//}
+//temp_comps = new  my_image_comp[imageParam.num_comp];
+//for (int n = 0; n < imageParam.num_comp; n++)
+//    temp_comps[n].init(imageParam.height, imageParam.width, 1); // Don't need a border for output
+//for (int n = 0; n < imageParam.num_comp; n++)
+//    apply_filter_modified(output_comps+n, temp_comps +n, lapkernel,3);

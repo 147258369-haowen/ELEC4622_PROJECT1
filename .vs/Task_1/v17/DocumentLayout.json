@@ -30,8 +30,24 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 3,
+          "SelectedChildIndex": 7,
           "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:129:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:131:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:130:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
             {
               "$type": "Document",
               "DocumentIndex": 3,
@@ -65,7 +81,7 @@
               "RelativeDocumentMoniker": "image_comps.h",
               "ToolTip": "D:\\ELEC4622\\GitProject1\\ELEC4622_PROJECT1\\image_comps.h",
               "RelativeToolTip": "image_comps.h",
-              "ViewState": "AQIAAB8AAAAAAAAAAIAwwDUAAAAFAAAA",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABAAAAARAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
               "WhenOpened": "2024-06-13T23:49:09.705Z",
               "EditorCaption": ""
@@ -78,7 +94,7 @@
               "RelativeDocumentMoniker": "image_comps.cpp",
               "ToolTip": "D:\\ELEC4622\\GitProject1\\ELEC4622_PROJECT1\\image_comps.cpp",
               "RelativeToolTip": "image_comps.cpp",
-              "ViewState": "AQIAAJoCAAAAAAAAAAAAAK4CAAAAAAAA",
+              "ViewState": "AQIAACgDAAAAAAAAAAAAADMDAAAyAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2024-06-13T12:44:44.321Z",
               "EditorCaption": ""
@@ -91,7 +107,7 @@
               "RelativeDocumentMoniker": "Task_1.cpp",
               "ToolTip": "D:\\ELEC4622\\GitProject1\\ELEC4622_PROJECT1\\Task_1.cpp",
               "RelativeToolTip": "Task_1.cpp",
-              "ViewState": "AQIAADYAAAAAAAAAAAAAAEwAAAA3AAAA",
+              "ViewState": "AQIAAEsAAAAAAAAAAAAAAFsAAAA9AAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2024-06-13T12:42:29.732Z",
               "EditorCaption": ""
