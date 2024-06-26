@@ -11,6 +11,7 @@
 #include <iostream>
 #include <emmintrin.h> // Include SSE2 processor intrinsic functions
 #include <pmmintrin.h>
+#include "string.h"
 /* ========================================================================= */
 /*                 Implementation of `my_image_comp' functions               */
 /* ========================================================================= */
@@ -20,6 +21,11 @@
 /*****************************************************************************/
 float h1D[3] = { -0.5, 0.0, 0.5 };
 float h2D[3] = { -0.5, 0.0, 0.5 };
+float laplacianKernel[3][3] = {
+        { 0.0f,-1.0f,0.0f},
+        { -1.0f, 4.0f, -1.0f },
+        { 0.0f,-1.0f,0.0f}
+};
 void my_image_comp::perform_boundary_extension()
 {
     int r, c;
@@ -86,7 +92,19 @@ void apply_filter(my_image_comp* in, my_image_comp* out)
             *op = sum;
         }
 }
-void horizontal(my_image_comp* in, my_image_comp* out, float** inputfilter, int width) {
+
+void listshift(float* buffer, float** ptr, int width) {
+    static int flag = 0;
+    if (flag == (width - 1)) {
+        flag = 0;
+    }
+    else {
+        flag++;
+    }
+    *ptr = buffer + flag;
+
+}
+void horizontal(my_image_comp* in, my_image_comp* out, float** inputfilter, int width, int G_MF_flag) {
 
     int filter_extent = (width - 1) / 2;
     int filter_dim = width;
@@ -108,24 +126,48 @@ void horizontal(my_image_comp* in, my_image_comp* out, float** inputfilter, int 
             mirror_psf[j] = (mirror_psf[j] * (1.0f / temp));
         }
     }
-
+    int inital_flag = 0;
+    float sum = 0.0F;
+    float* buffer = new float[width];
+    float* bufptr = buffer;
     for (int r = 0; r < out->height; r++)//进行卷积操作
+
         for (int c = 0; c < out->width; c++)
         {
             float* ip = in->buf + r * in->stride + c;
             float* op = out->buf + r * out->stride + c;
             //mirror_psf = mirror_psf + r * out->stride + c;
-            float sum = 0.0F;
-            // for (int y = -filter_extent; y <= filter_extent; y++)//列
-            for (int x = -filter_extent; x <= filter_extent; x++)//行
-            {
-                sum += ip[x] * mirror_psf[x];
+            if (!G_MF_flag) {//gaussian
+                sum = 0.0F;
             }
+            // for (int y = -filter_extent; y <= filter_extent; y++)//列
+            if (inital_flag == 0) {
+                for (int x = -filter_extent; x <= filter_extent; x++)//行
+                {
+                    sum += ip[x] * mirror_psf[x];
+                    *bufptr = ip[x] * mirror_psf[x];
+                    listshift(buffer, &bufptr, width);
+                }
+
+            }
+            else {
+                sum += (ip[filter_extent] * mirror_psf[filter_extent]);
+                sum -= *bufptr;
+                *bufptr = (ip[filter_extent] * mirror_psf[filter_extent]);
+                listshift(buffer, &bufptr, width);
+            }
+            if (sum > 255) sum = 255;
+            else if (sum < 0) sum = 0;
+            inital_flag = G_MF_flag ? 1 : 0;
             *op = sum;
+            //if (c == (out->width - 1)) {
+            //    sum = 0;
+            //    inital_flag = 0;
+            //}
         }
     delete[] filter_buf;
 }
-void vertical(my_image_comp* in, my_image_comp* out, float** inputfilter, int width) {
+void vertical(my_image_comp* in, my_image_comp* out, float** inputfilter, int width, int G_MF_flag) {
 
     int filter_extent = (width - 1) / 2;
     int filter_dim = width;
@@ -142,20 +184,44 @@ void vertical(my_image_comp* in, my_image_comp* out, float** inputfilter, int wi
             mirror_psf[j] = (mirror_psf[j] * (1.0f / temp));
         }
     }
-
-    for (int r = 0; r < out->height; r++)//进行卷积操作
-        for (int c = 0; c < out->width; c++)
+    float* buffer = new float[width];
+    float* bufptr = buffer;
+    int inital_flag = 0;
+    float sum = 0.0F;
+    for (int r = 0; r < out->width; r++)//进行卷积操作
+        for (int c = 0; c < out->height; c++)
         {
-            float* ip = in->buf + r * in->stride + c;
-            float* op = out->buf + r * out->stride + c;
+            //float* ip = in->buf + r * in->stride + c;
+            //float* op = out->buf + r * out->stride + c;
+            float* ip = in->buf + c * in->stride + r;
+            float* op = out->buf + c * out->stride + r;
 
-            float sum = 0.0F;
-
-            for (int y = -filter_extent; y <= filter_extent; y++)//
-            {
-                sum += ip[y * in->stride] * mirror_psf[y];
+            if (!G_MF_flag) {
+                sum = 0.0F;
             }
+            if (!inital_flag) {
+                for (int y = -filter_extent; y <= filter_extent; y++)//
+                {
+
+                    sum += ip[y * in->stride] * mirror_psf[y];
+                    *bufptr = ip[y * in->stride] * mirror_psf[y];
+                    listshift(buffer, &bufptr, width);
+                }
+            }
+            else {
+                sum += ip[filter_extent * in->stride] * mirror_psf[filter_extent];
+                sum -= *bufptr;
+                *bufptr = (ip[filter_extent * in->stride] * mirror_psf[filter_extent]);
+                listshift(buffer, &bufptr, width);
+            }
+            if (sum > 255) sum = 255;
+            else if (sum < 0) sum = 0;
+            inital_flag = G_MF_flag ? 1 : 0;
             *op = sum;
+            /*          if (c == (out->height - 1)) {
+                          sum = 0;
+                          inital_flag = 0;
+                      }*/
         }
     delete[] filter_buf;
 }
@@ -183,15 +249,16 @@ float FilterNormalized(float** input, int dimension) {
     }
     return 1;
 }
-void apply_filter_modified(my_image_comp* in, my_image_comp* out, float** inputfilter, int width) {
+void apply_filter_modified(my_image_comp* in, my_image_comp* out, float* inputfilter, int width) {
     int filter_extent = (width - 1) / 2;
     int filter_dim = width;
     int filter_taps = width * width;
     float* filter_buf = new float[filter_taps];
-    float* mirror_psf = filter_buf + (filter_dim * filter_extent) + filter_extent;//中间点
+    float* mirror_psf = (filter_buf + (filter_dim * filter_extent) + filter_extent);//中间点
+    float* ptr = (inputfilter + (filter_dim * filter_extent) + filter_extent);
     for (int i = -filter_extent; i <= filter_extent; i++) {//加载卷积核
         for (int j = -filter_extent; j <= filter_extent; j++) {
-            mirror_psf[i * filter_dim + j] = inputfilter[i + filter_extent][j + filter_extent];
+            mirror_psf[i * filter_dim + j] = ptr[i * filter_dim + j];
         }
     }
     for (int r = 0; r < out->height; r++)//进行卷积操作
@@ -207,6 +274,7 @@ void apply_filter_modified(my_image_comp* in, my_image_comp* out, float** inputf
         }
     delete[] filter_buf;
 }
+
 void my_image_comp::apply_filter_modified_simo(my_image_comp* in, my_image_comp* out, float** inputfilter, int width) {
     int filter_extent = (width - 1) / 2;
     int filter_dim = width;
@@ -308,10 +376,18 @@ float h3[9][9]{
 };
 #define WIDTH 5
 #define HIGHT 5
-/*****************************************************************************/
-/*                                    main                                   */
-/*****************************************************************************/
 
+static float ParamCheck(char** argv, int argc,const char* beta,int len) {
+    for (int i = 0; i < argc; i++) {
+        char* ptr = strstr(argv[i], beta);
+        if (ptr != NULL) {
+            float data = atof((argv[i] + len));
+            printf("%s:%f\r\n",beta, data);
+            return data;
+        }
+    }
+    return 0;
+}
 void CheckInput(int argc, char* argv[], float* sigma, int* filterChooseFlag, ImageParam* param) {
     param->gradientFlag = false;
     if (argc < 4)
@@ -323,37 +399,50 @@ void CheckInput(int argc, char* argv[], float* sigma, int* filterChooseFlag, Ima
         fprintf(stderr, "The sigma value is not correct\n");
         exit(-1);
     }
+    param->beta = ParamCheck(argv,argc,"beta:",5);
+    if (!param->beta) {
+        fprintf(stderr, "No Beta value\n");
+        exit(-1);
+    }
     *sigma = atof(argv[3]);
-    if (argc == 4) {
 
-        fprintf(stdout, "Gaussian\n");
-        *filterChooseFlag = GAUSSIAN;
+    param->alpha = ParamCheck(argv, argc, "alpha:", 6);
+    if (!param->alpha) {
+        fprintf(stderr, "No alpha value\n");
+        exit(-1);
     }
-    else if (argc == 5 && !strcmp(argv[4], "-w")) {
-        printf("1\r\n");
-        fprintf(stdout, "Moving average\n");
-        *filterChooseFlag = MOVINGAVERAGE;
-    }
-    else if (argc == 5 && (atof(argv[4]) > 0.0f)) {
-        printf("2\r\n");
-        param->alpha = atof(argv[4]);
-        if (param->alpha <= 0.0f) {
-            fprintf(stderr, "The alpha value is not correct\n");
-            exit(-1);
-        }
-        *filterChooseFlag = GAUSSIAN;
-        param->gradientFlag = true;
-    }
-    if (argc == 6) {
-        printf("3\r\n");
-        param->alpha = atof(argv[5]);
-        if (param->alpha <= 0.0f) {
-            fprintf(stderr, "The alpha value is not correct\n");
-            exit(-1);
-        }
-        param->gradientFlag = true;
-        *filterChooseFlag = MOVINGAVERAGE;
-    }
+    *filterChooseFlag = GAUSSIAN;
+    param->gradientFlag = true;
+    //if (argc == 4) {
+
+    //    fprintf(stdout, "Gaussian\n");
+    //    *filterChooseFlag = GAUSSIAN;
+    //}
+    //else if (argc == 5 && !strcmp(argv[4], "-w")) {
+    //    printf("1\r\n");
+    //    fprintf(stdout, "Moving average\n");
+    //    *filterChooseFlag = MOVINGAVERAGE;
+    //}
+    //else if (argc == 5 && (atof(argv[4]) > 0.0f)) {
+    //    printf("2\r\n");
+    //    param->alpha = atof(argv[4]);
+    //    if (param->alpha <= 0.0f) {
+    //        fprintf(stderr, "The alpha value is not correct\n");
+    //        exit(-1);
+    //    }
+    //    *filterChooseFlag = GAUSSIAN;
+    //    param->gradientFlag = true;
+    //}
+    //if (argc == 6) {
+    //    printf("3\r\n");
+    //    param->alpha = atof(argv[5]);
+    //    if (param->alpha <= 0.0f) {
+    //        fprintf(stderr, "The alpha value is not correct\n");
+    //        exit(-1);
+    //    }
+    //    param->gradientFlag = true;
+    //    *filterChooseFlag = MOVINGAVERAGE;
+    //}
 
 }
 void LoadImage(bmp_in* in, my_image_comp** input_comps, my_image_comp** output_comps, io_byte** line,
@@ -465,42 +554,6 @@ float GaussianFillKernel(int x, int y, float sigma) {
     float coefficient = 1.0f / (2.0f * PI * sigma * sigma);
     float e_part = exp(-((float)x * (float)x + (float)y * (float)y) / (2.0f * sigma * sigma));
     return coefficient * e_part;
-}
-static float DerivativeGaussian(int x_, int y_, float sigma, int x_or_y) {
-    float x = (float)x_;
-    float y = (float)y_;
-    if (x_or_y) {
-        float D_part = ((-x) / (sqrt(2.0 * PI) * sigma * sigma * sigma))*exp((-x*x)/(2.0*sigma*sigma));
-        float G_part = (1.0 / (sqrt(2.0 * PI * sigma * sigma))) * exp((y*y)/(-2.0*sigma*sigma));
-        return D_part * G_part;
-    }
-    else {
-        float D_part = ((-y) / (sqrt(2.0 * PI) * sigma * sigma * sigma)) * exp((-y * y) / (2.0 * sigma * sigma));
-        float G_part = (1.0 / (sqrt(2.0 * PI * sigma * sigma))) * exp((x * x) / (-2.0 * sigma * sigma));
-        return D_part * G_part;
-    }
-
-}
-int LoadDerivativeGaussianValue(float* matrix, float sigma, int dimension, int x_or_y) {
-    int offset = ((dimension - 1) / 2);
-    float* ptr = matrix + offset;// central point
-    if (x_or_y) {
-        for (int i = -offset; i <= offset; i++) {
-            ptr[i] = DerivativeGaussian(i, 0, sigma, x_or_y);
-        }
-    }
-    else {
-        for (int i = -offset; i <= offset; i++) {
-            ptr[i] = DerivativeGaussian(0, i, sigma, x_or_y);
-        }   
-    }
-    printf("kernel is: ");
-    for (int i = -offset; i <= offset; i++) {
-        printf("%f,", ptr[i]);
-    }
-    printf("\n");
-    return 1;
-
 }
 int GaussianWindowDimensionChoose(float sigma) {
     float windowSize = 2 * (3 * sigma) + 1;
@@ -690,9 +743,82 @@ void my_image_comp::vector_horizontal_filter(my_image_comp* in, int dimension)
     // 释放动态分配的内存
     _mm_free(filter_buf);
 }
-void my_image_comp::GrradientHorizontalFilter(my_image_comp* in, int dimension, int alpha,float* kernel) {
+void my_image_comp::SecondGrradientHorizontalFilter(my_image_comp* in, int dimension, ImageParam* imagP, int alpha) {
     int radius = (dimension - 1) / 2;
-    float* centralPoint = (kernel + radius);
+    float* centralPoint = &h1D[1];
+    my_image_comp* temp = new my_image_comp;
+    temp->init(this->height, this->width, 1);
+    float* outBuf = temp->buf;
+    float* inBuf = in->buf;
+    for (int i = 1; i <= 2; i++) {
+        for (int r = 0; r < this->height; r++) {  //进行卷积操作
+            for (int c = 0; c < this->width; c++)
+            {
+                float* ip = inBuf + r * in->stride + c;
+                float* op = outBuf + r * this->stride + c;
+                float sum = 0.00F;
+                for (int x = -radius; x <= radius; x++)//行
+                {
+                    float temp_ = ip[x] * centralPoint[x];
+                    if (i == 1) {
+                        sum += (temp_);//(float)alpha *
+                    }
+                    else {
+                        sum += ((float)alpha * temp_ + 128);
+                    }
+
+                }
+                if (sum <= 0.0f) sum = 0.0f;
+                else if (sum >= 255.0f) sum = 255.0f;
+                *op = sum;
+            }
+        }
+        outBuf = this->buf;
+        inBuf = temp->buf;
+    }
+    delete temp;
+
+}
+void my_image_comp::SecondGrradientverticalFilter(my_image_comp* in, int dimension, ImageParam* imagP, int alpha) {
+    float* centralPoint = &h2D[1];
+    int radius = (dimension - 1) / 2;
+    my_image_comp* temp_comp = new my_image_comp;
+    temp_comp->init(this->height, this->width, 1);
+    float* outBuf = temp_comp->buf;
+    float* inBuf = in->buf;
+    for (int i = 1; i <= 2; i++) {
+        for (int r = 0; r < this->width; r++) {//进行卷积操作
+            for (int c = 0; c < this->height; c++)
+            {
+                float* ip = inBuf + c * in->stride + r;
+                float* op = outBuf + c * this->stride + r;
+
+                float sum = 0.00F;
+
+                for (int y = -radius; y <= radius; y++)//
+                {
+                    float temp = ip[y * in->stride] * centralPoint[y];
+                    if (i == 1) {
+                        sum += (temp);//(float)alpha *
+                    }
+                    else {
+                        sum += ((float)alpha * temp + 128);
+                    }
+                }
+                if (sum <= 0.0f) sum = 0.0f;
+                else if (sum >= 255.0f) sum = 255.0f;
+
+                *op = sum;
+            }
+        }
+        outBuf = this->buf;
+        inBuf = temp_comp->buf;
+    }
+    delete temp_comp;
+}
+void my_image_comp::GrradientHorizontalFilter(my_image_comp* in, int dimension, int alpha) {
+    int radius = (dimension - 1) / 2;
+    float* centralPoint = &h1D[1];
     for (int r = 0; r < this->height; r++)//进行卷积操作
         for (int c = 0; c < this->width; c++)
         {
@@ -704,7 +830,7 @@ void my_image_comp::GrradientHorizontalFilter(my_image_comp* in, int dimension, 
             for (int x = -radius; x <= radius; x++)//行
             {
                 float temp = ip[x] * centralPoint[x];
-                sum += ((float)alpha * temp);
+                sum += ((float)alpha * (temp));
             }
             if (sum <= 0.0f) sum = 0.1f;
             else if (sum >= 255.0f) sum = 254.0f;
@@ -712,9 +838,9 @@ void my_image_comp::GrradientHorizontalFilter(my_image_comp* in, int dimension, 
         }
 
 }
-void my_image_comp::GrradientverticalFilter(my_image_comp* in, int width, int alpha,float* kernel) {
+void my_image_comp::GrradientverticalFilter(my_image_comp* in, int width, int alpha) {
+    float* centralPoint = &h2D[1];
     int radius = (width - 1) / 2;
-    float* centralPoint = (kernel + radius);
     for (int r = 0; r < this->width; r++)//进行卷积操作
         for (int c = 0; c < this->height; c++)
         {
@@ -726,7 +852,7 @@ void my_image_comp::GrradientverticalFilter(my_image_comp* in, int width, int al
             for (int y = -radius; y <= radius; y++)//
             {
                 float temp = ip[y * in->stride] * centralPoint[y];
-                sum += ((float)alpha * temp);
+                sum += ((float)alpha * (temp));
             }
             if (sum <= 0.0f) sum = 0.1f;
             else if (sum >= 255.0f) sum = 254.0f;

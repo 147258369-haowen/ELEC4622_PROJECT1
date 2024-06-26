@@ -14,7 +14,7 @@
 #define HIGHT 5
 #define PI 3.14159265
 //#define DEBUG
-#define LAPLACIAN 0
+#define LAPLACIAN 1
 typedef enum {
     CHECK_INPUT,
     LOAD_PICTURE,
@@ -67,9 +67,9 @@ struct my_image_comp {
     void apply_filter_modified_simo(my_image_comp* in, my_image_comp* out, float** inputfilter, int width);
     void vector_filter(my_image_comp* in, int dimension);
     void vector_horizontal_filter(my_image_comp* in, int dimension);
-    void GrradientHorizontalFilter(my_image_comp* in, int dimension,int alpha);
+    void GrradientHorizontalFilter(my_image_comp* in, int dimension, int alpha);
     void GrradientverticalFilter(my_image_comp* in, int width, int alpha);
-    void SecondGrradientHorizontalFilter(my_image_comp* in, int dimension, ImageParam* imagP,int alpha);
+    void SecondGrradientHorizontalFilter(my_image_comp* in, int dimension, ImageParam* imagP, int alpha);
     void SecondGrradientverticalFilter(my_image_comp* in, int dimension, ImageParam* imagP, int alpha);
     // This function is implemented in "filtering_main.cpp".
 };

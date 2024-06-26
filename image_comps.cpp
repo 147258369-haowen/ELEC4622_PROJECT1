@@ -18,6 +18,7 @@
 /*****************************************************************************/
 /*                  my_image_comp::perform_boundary_extension                */
 /*****************************************************************************/
+#define CLAMP_TO_BYTE(sum) ((sum) = (sum) > 255 ? 255 : ((sum) < 0 ? 0 : (sum)))
 float h1D[3] = { -0.5, 0.0, 0.5 };
 float h2D[3] = { -0.5, 0.0, 0.5 };
 float laplacianKernel[3][3] = {
@@ -144,8 +145,11 @@ void horizontal(my_image_comp* in, my_image_comp* out, float** inputfilter, int 
                 for (int x = -filter_extent; x <= filter_extent; x++)//行
                 {
                     sum += ip[x] * mirror_psf[x];
-                    *bufptr = ip[x] * mirror_psf[x];
-                    listshift(buffer,&bufptr,width);
+                    if (G_MF_flag) {//MV
+                        *bufptr = ip[x] * mirror_psf[x];
+                        listshift(buffer, &bufptr, width);
+                    }
+
                 }
 
             }
@@ -155,8 +159,7 @@ void horizontal(my_image_comp* in, my_image_comp* out, float** inputfilter, int 
                 *bufptr = (ip[filter_extent] * mirror_psf[filter_extent]);
                 listshift(buffer, &bufptr, width);
             }
-            if (sum > 255) sum = 255;
-            else if (sum < 0) sum = 0;
+            CLAMP_TO_BYTE(sum);
             inital_flag = G_MF_flag ? 1 : 0;
             *op = sum;
             //if (c == (out->width - 1)) {
@@ -190,8 +193,6 @@ void vertical(my_image_comp* in, my_image_comp* out, float** inputfilter, int wi
     for (int r = 0; r < out->width; r++)//进行卷积操作
         for (int c = 0; c < out->height; c++)
         {
-            //float* ip = in->buf + r * in->stride + c;
-            //float* op = out->buf + r * out->stride + c;
             float* ip = in->buf + c * in->stride + r;
             float* op = out->buf + c * out->stride + r;
 
@@ -203,8 +204,11 @@ void vertical(my_image_comp* in, my_image_comp* out, float** inputfilter, int wi
                 {
                     
                     sum += ip[y * in->stride] * mirror_psf[y];
-                    *bufptr = ip[y * in->stride] * mirror_psf[y];
-                    listshift(buffer, &bufptr, width);
+                    if (G_MF_flag) {
+                        *bufptr = ip[y * in->stride] * mirror_psf[y];
+                        listshift(buffer, &bufptr, width);
+                    }
+
                 }
             }
             else {
@@ -213,8 +217,7 @@ void vertical(my_image_comp* in, my_image_comp* out, float** inputfilter, int wi
                 *bufptr = (ip[filter_extent * in->stride] * mirror_psf[filter_extent]);
                 listshift(buffer, &bufptr, width);
             }
-            if (sum > 255) sum = 255;
-            else if (sum < 0) sum = 0;
+            CLAMP_TO_BYTE(sum);
             inital_flag = G_MF_flag ? 1:0;
             *op = sum;
   /*          if (c == (out->height - 1)) {
@@ -248,15 +251,16 @@ float FilterNormalized(float** input, int dimension) {
     }
     return 1;
 }
-void apply_filter_modified(my_image_comp* in, my_image_comp* out, float** inputfilter, int width) {
+void apply_filter_modified(my_image_comp* in, my_image_comp* out, float* inputfilter, int width) {
     int filter_extent = (width - 1) / 2;
     int filter_dim = width;
     int filter_taps = width * width;
     float* filter_buf = new float[filter_taps];
-    float* mirror_psf = filter_buf + (filter_dim * filter_extent) + filter_extent;//中间点
+    float* mirror_psf = (filter_buf + (filter_dim * filter_extent) + filter_extent);//中间点
+    float* ptr = (inputfilter + (filter_dim * filter_extent) + filter_extent);
     for (int i = -filter_extent; i <= filter_extent; i++) {//加载卷积核
         for (int j = -filter_extent; j <= filter_extent; j++) {
-            mirror_psf[i * filter_dim + j] = inputfilter[i + filter_extent][j + filter_extent];
+            mirror_psf[i * filter_dim + j] = ptr[i * filter_dim + j];
         }
     }
     for (int r = 0; r < out->height; r++)//进行卷积操作
@@ -737,7 +741,7 @@ void my_image_comp::SecondGrradientHorizontalFilter(my_image_comp* in, int dimen
                 {
                     float temp_ = ip[x] * centralPoint[x];
                     if (i == 1) {
-                        sum += (temp_);//(float)alpha *
+                        sum += abs((temp_));//(float)alpha *
                     }
                     else {
                         sum += ((float)alpha * temp_ + 128);
@@ -775,7 +779,7 @@ void my_image_comp::SecondGrradientverticalFilter(my_image_comp* in, int dimensi
                 {
                     float temp = ip[y * in->stride] * centralPoint[y];
                     if (i == 1) {
-                        sum += ( temp);//(float)alpha *
+                        sum += abs((temp));//(float)alpha *
                     }
                     else {
                         sum += ((float)alpha * temp + 128);
@@ -806,7 +810,7 @@ void my_image_comp::GrradientHorizontalFilter(my_image_comp* in, int dimension,i
             for (int x = -radius; x <= radius; x++)//行
             {
                 float temp = ip[x] * centralPoint[x];
-                sum += ((float)alpha * temp);
+                sum += ((float)alpha * (temp));
             }
             if (sum <= 0.0f) sum = 0.1f;
             else if (sum >= 255.0f) sum = 254.0f;
@@ -817,18 +821,18 @@ void my_image_comp::GrradientHorizontalFilter(my_image_comp* in, int dimension,i
 void my_image_comp::GrradientverticalFilter(my_image_comp* in, int width,int alpha) {
     float* centralPoint = &h2D[1];
     int radius = (width - 1) / 2;
-    for (int r = 0; r < this->height; r++)//进行卷积操作
-        for (int c = 0; c < this->width; c++)
+    for (int r = 0; r < this->width; r++)//进行卷积操作
+        for (int c = 0; c < this->height; c++)
         {
-            float* ip = in->buf + r * in->stride + c;
-            float* op = this->buf + r * this->stride + c;
+            float* ip = in->buf + c * in->stride + r;
+            float* op = this->buf + c * this->stride + r;
 
             float sum = 0.00F;
 
             for (int y = -radius; y <= radius; y++)//
             {
                 float temp = ip[y * in->stride] * centralPoint[y];
-                sum += ((float)alpha* temp);
+                sum += ((float)alpha* (temp));
             }
             if (sum <= 0.0f) sum = 0.1f;
             else if (sum >= 255.0f) sum = 254.0f;
