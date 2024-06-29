@@ -760,16 +760,10 @@ void my_image_comp::SecondGrradientHorizontalFilter(my_image_comp* in, int dimen
                 for (int x = -radius; x <= radius; x++)//行
                 {
                     float temp_ = ip[x] * centralPoint[x];
-                    if (i == 1) {
-                        sum += (temp_);//(float)alpha *
-                    }
-                    else {
-                        sum += ((float)alpha * temp_ + 128);
-                    }
 
+                    sum += (temp_);
                 }
-                if (sum <= 0.0f) sum = 0.0f;
-                else if (sum >= 255.0f) sum = 255.0f;
+   
                 *op = sum;
             }
         }
@@ -798,16 +792,8 @@ void my_image_comp::SecondGrradientverticalFilter(my_image_comp* in, int dimensi
                 for (int y = -radius; y <= radius; y++)//
                 {
                     float temp = ip[y * in->stride] * centralPoint[y];
-                    if (i == 1) {
-                        sum += (temp);//(float)alpha *
-                    }
-                    else {
-                        sum += ((float)alpha * temp + 128);
-                    }
+                    sum += (temp);
                 }
-                if (sum <= 0.0f) sum = 0.0f;
-                else if (sum >= 255.0f) sum = 255.0f;
-
                 *op = sum;
             }
         }

@@ -97,10 +97,13 @@ int main(int argc, char* argv[]) {
             temp_comps = new  my_image_comp[imageParam.num_comp];
             for (int n = 0; n < imageParam.num_comp; n++)
                 temp_comps[n].init(imageParam.height, imageParam.width, 1); // Don't need a border for output
-            for (int n = 0; n < imageParam.num_comp; n++)
-                temp_comps[n].GrradientHorizontalFilter(output_comps + n,3,imageParam.alpha);
-            for (int n = 0; n < imageParam.num_comp; n++)
-                output_comps[n].GrradientverticalFilter(temp_comps + n,3, imageParam.alpha);
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < (temp_comps[i].stride * (temp_comps[i].height + 2 * temp_comps[i].border)); j++) {
+                    temp_comps[i].handle[j] = output_comps[i].handle[j];
+                }
+            }
+             for (int n = 0; n < imageParam.num_comp; n++)
+                output_comps[n].GradientFilter(temp_comps + n,3, imageParam.alpha);
 #endif
             state = OUTPUT_PICTURE;
             break;

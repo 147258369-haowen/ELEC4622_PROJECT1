@@ -796,6 +796,25 @@ void my_image_comp::SecondGrradientverticalFilter(my_image_comp* in, int dimensi
     }
     delete temp_comp;
 }
+void  my_image_comp::GradientFilter(my_image_comp* in, int width, int alpha) {
+    int x, y;
+    float gx, gy;
+    float gradient;
+
+    for (y = 0; y < this->height; y++) {
+        for (x = 0; x < this->width; x++) {
+            gx = in->buf[(y * in->stride) + (x + 1)] - in->buf[(y * in->stride) + (x - 1)];
+            gy = in->buf[((y + 1) * in->stride) + x] - in->buf[((y - 1) * in->stride) + x];
+            gx *= 0.5;
+            gy *= 0.5;
+            gradient = alpha * sqrt(gx * gx + gy * gy);
+            
+            CLAMP_TO_BYTE(gradient);
+            this->buf[(y * in->stride) + x] = gradient;
+        }
+    }
+
+}
 void my_image_comp::GrradientHorizontalFilter(my_image_comp* in, int dimension,int alpha) {
     int radius = (dimension - 1) / 2;
     float* centralPoint = &h1D[1];

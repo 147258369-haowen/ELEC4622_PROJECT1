@@ -15,6 +15,7 @@
 #define PI 3.14159265
 //#define DEBUG
 #define LAPLACIAN 1
+#define CLAMP_TO_BYTE(sum) ((sum) = (sum) > 255 ? 255 : ((sum) < 0 ? 0 : (sum)))
 typedef enum {
     CHECK_INPUT,
     LOAD_PICTURE,
@@ -63,6 +64,7 @@ struct my_image_comp {
         handle = new float[stride * (height + 2 * border)];
         buf = handle + (border * stride) + border;//the real picture start point
     }
+    void Gradient2_Filter(my_image_comp* in, int width, int alpha);
     void perform_boundary_extension();
     void apply_filter_modified_simo(my_image_comp* in, my_image_comp* out, float** inputfilter, int width);
     void vector_filter(my_image_comp* in, int dimension);
@@ -75,7 +77,7 @@ struct my_image_comp {
 };
 void apply_filter(my_image_comp* in, my_image_comp* out);
 float FilterNormalized(float** input, int dimension);
-void apply_filter_modified(my_image_comp* in, my_image_comp* out, float** inputfilter, int width);
+void apply_filter_modified(my_image_comp* in, my_image_comp* out, float* inputfilter, int width);
 void apply_filter_modified_simo(my_image_comp* in, my_image_comp* out, float** inputfilter, int width);
 void unsharp_mask_filter(float** inputfilter, int width, float alpha);
 void CheckInput(int argc, char* argv[], float* sigma, int* filterChooseFlag, ImageParam* param);

@@ -16,6 +16,7 @@
 #define PI 3.14159265
 //#define DEBUG
 #define LAPLACIAN 0
+#define CLAMP_TO_BYTE(sum) ((sum) = (sum) > 255 ? 255 : ((sum) < 0 ? 0 : (sum)))
 typedef enum {
     CHECK_INPUT,
     LOAD_PICTURE,
@@ -73,6 +74,25 @@ struct my_image_comp {
         float _2nd_derivative_x = (-1.0 / (2.0 * PI * pow(sigma, 4))) * (1 - ((pow(x, 2)) / (pow(sigma, 2)))) * exp(-(x * x + y * y) / (2.0 * sigma * sigma));
         float _2nd_derivative_y = (-1.0 / (2.0 * PI * pow(sigma, 4))) * (1 - ((pow(y, 2)) / (pow(sigma, 2)))) * exp(-(x * x + y * y) / (2.0 * sigma * sigma));
         return (_2nd_derivative_x + _2nd_derivative_y);
+    }
+    void GradientFilter(my_image_comp* in, int width, int alpha) {
+        int x, y;
+        float gx, gy;
+        float gradient;
+
+        for (y = 0; y < this->height; y++) {
+            for (x = 0; x < this->width; x++) {
+                gx = in->buf[(y * in->stride) + (x + 1)] - in->buf[(y * in->stride) + (x - 1)];
+                gy = in->buf[((y + 1) * in->stride) + x] - in->buf[((y - 1) * in->stride) + x];
+                gx *= 0.5;
+                gy *= 0.5;
+                gradient = alpha * sqrt(gx * gx + gy * gy);
+
+                CLAMP_TO_BYTE(gradient);
+                this->buf[(y * in->stride) + x] = gradient;
+            }
+        }
+
     }
     float* LOGKernelCreat(int dimension) {
         return new float[dimension * dimension];

@@ -69,6 +69,7 @@ struct my_image_comp {
     void vector_horizontal_filter(my_image_comp* in, int dimension);
     void GrradientHorizontalFilter(my_image_comp* in, int dimension,int alpha);
     void GrradientverticalFilter(my_image_comp* in, int width, int alpha);
+    void GradientFilter(my_image_comp* in, int width, int alpha);
     void SecondGrradientHorizontalFilter(my_image_comp* in, int dimension, ImageParam* imagP,int alpha);
     void SecondGrradientverticalFilter(my_image_comp* in, int dimension, ImageParam* imagP, int alpha);
     // This function is implemented in "filtering_main.cpp".

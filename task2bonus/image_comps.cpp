@@ -11,6 +11,7 @@
 #include <iostream>
 #include <emmintrin.h> // Include SSE2 processor intrinsic functions
 #include <pmmintrin.h>
+
 /* ========================================================================= */
 /*                 Implementation of `my_image_comp' functions               */
 /* ========================================================================= */
@@ -690,6 +691,26 @@ void my_image_comp::vector_horizontal_filter(my_image_comp* in, int dimension)
     // 释放动态分配的内存
     _mm_free(filter_buf);
 }
+void my_image_comp::DOGFilter(my_image_comp* in, int dimension, int alpha, float* kernel) {
+    int x, y;
+    float gx, gy;
+    float gradient;
+    int radius = (dimension - 1) / 2;
+    float* centralPoint = (kernel + radius);
+    for (y = 0; y < this->height; y++) {
+        for (x = 0; x < this->width; x++) {
+            gx = in->buf[(y * in->stride) + (x + 1)] - in->buf[(y * in->stride) + (x - 1)];
+            gy = in->buf[((y + 1) * in->stride) + x] - in->buf[((y - 1) * in->stride) + x];
+            gx *= 0.5;
+            gy *= 0.5;
+            gradient = alpha * sqrt(gx * gx + gy * gy);
+
+            CLAMP_TO_BYTE(gradient);
+            this->buf[(y * in->stride) + x] = gradient;
+        }
+    }
+
+}
 void my_image_comp::GrradientHorizontalFilter(my_image_comp* in, int dimension, int alpha,float* kernel) {
     int radius = (dimension - 1) / 2;
     float* centralPoint = (kernel + radius);
@@ -704,10 +725,9 @@ void my_image_comp::GrradientHorizontalFilter(my_image_comp* in, int dimension, 
             for (int x = -radius; x <= radius; x++)//行
             {
                 float temp = ip[x] * centralPoint[x];
-                sum += ((float)alpha * temp);
+                sum += (temp);
             }
-            if (sum <= 0.0f) sum = 0.1f;
-            else if (sum >= 255.0f) sum = 254.0f;
+            CLAMP_TO_BYTE(sum);
             *op = sum;
         }
 
@@ -726,10 +746,9 @@ void my_image_comp::GrradientverticalFilter(my_image_comp* in, int width, int al
             for (int y = -radius; y <= radius; y++)//
             {
                 float temp = ip[y * in->stride] * centralPoint[y];
-                sum += ((float)alpha * temp);
+                sum += (temp);
             }
-            if (sum <= 0.0f) sum = 0.1f;
-            else if (sum >= 255.0f) sum = 254.0f;
+            CLAMP_TO_BYTE(sum);
 
             *op = sum;
         }

@@ -18,7 +18,7 @@
 /*****************************************************************************/
 /*                  my_image_comp::perform_boundary_extension                */
 /*****************************************************************************/
-#define CLAMP_TO_BYTE(sum) ((sum) = (sum) > 255 ? 255 : ((sum) < 0 ? 0 : (sum)))
+
 float h1D[3] = { -0.5, 0.0, 0.5 };
 float h2D[3] = { -0.5, 0.0, 0.5 };
 float laplacianKernel[3][3] = {
@@ -272,6 +272,7 @@ void apply_filter_modified(my_image_comp* in, my_image_comp* out, float* inputfi
             for (int y = -filter_extent; y <= filter_extent; y++)//列
                 for (int x = -filter_extent; x <= filter_extent; x++)//行
                     sum += ip[y * in->stride + x] * mirror_psf[y * filter_dim + x];
+            CLAMP_TO_BYTE(sum);
             *op = sum;
         }
     delete[] filter_buf;
@@ -723,6 +724,36 @@ void my_image_comp::vector_horizontal_filter(my_image_comp* in, int dimension)
     // 释放动态分配的内存
     _mm_free(filter_buf);
 }
+void  my_image_comp::Gradient2_Filter(my_image_comp* in, int width, int alpha) {
+    int x, y;
+    float gx, gy;
+    float gradient;
+    my_image_comp* temp = new my_image_comp;
+    temp->init(this->height, this->width, 1);
+    float* outBuf = temp->buf;
+    float* inBuf = in->buf;
+    for (int i = 1; i <= 2; i++) {
+        for (y = 0; y < this->height; y++) {
+            for (x = 0; x < this->width; x++) {
+                gx = inBuf[(y * in->stride) + (x + 1)] - inBuf[(y * in->stride) + (x - 1)];
+                gy = inBuf[((y + 1) * in->stride) + x] - inBuf[((y - 1) * in->stride) + x];
+                gx *= 0.5;
+                gy *= 0.5;
+                if (i == 1) {
+                    gradient = alpha * sqrt(gx * gx + gy * gy);
+                }
+                
+
+                CLAMP_TO_BYTE(gradient);
+                outBuf[(y * in->stride) + x] = gradient;
+            }
+        }
+        outBuf = this->buf;
+        inBuf = temp->buf;
+    }
+    delete temp;
+
+}
 void my_image_comp::SecondGrradientHorizontalFilter(my_image_comp* in, int dimension, ImageParam* imagP, int alpha) {
     int radius = (dimension - 1) / 2;
     float* centralPoint = &h1D[1];
@@ -740,16 +771,10 @@ void my_image_comp::SecondGrradientHorizontalFilter(my_image_comp* in, int dimen
                 for (int x = -radius; x <= radius; x++)//行
                 {
                     float temp_ = ip[x] * centralPoint[x];
-                    if (i == 1) {
-                        sum += abs((temp_));//(float)alpha *
-                    }
-                    else {
-                        sum += ((float)alpha * temp_ + 128);
-                    }
 
+                    sum += temp_;
                 }
-                if (sum <= 0.0f) sum = 0.0f;
-                else if (sum >= 255.0f) sum = 255.0f;
+               // CLAMP_TO_BYTE(sum);
                 *op = sum;
             }
         }
@@ -778,15 +803,9 @@ void my_image_comp::SecondGrradientverticalFilter(my_image_comp* in, int dimensi
                 for (int y = -radius; y <= radius; y++)//
                 {
                     float temp = ip[y * in->stride] * centralPoint[y];
-                    if (i == 1) {
-                        sum += abs((temp));//(float)alpha *
-                    }
-                    else {
-                        sum += ((float)alpha * temp + 128);
-                    }
+                    sum += temp;
                 }
-                if (sum <= 0.0f) sum = 0.0f;
-                else if (sum >= 255.0f) sum = 255.0f;
+               // CLAMP_TO_BYTE(sum);
 
                 *op = sum;
             }

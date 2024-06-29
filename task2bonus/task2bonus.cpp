@@ -15,7 +15,8 @@ int main(int argc, char* argv[]) {
     io_byte* line = nullptr;
     float** matrix = nullptr;
     my_image_comp* temp_comps = nullptr;
-    my_image_comp* dog_comps = nullptr;
+    my_image_comp* dog_x = nullptr;
+    my_image_comp* dog_y = nullptr;
     ImageParam imageParam;
     float sigma = 0;
     while (true) {
@@ -90,13 +91,34 @@ int main(int argc, char* argv[]) {
             imageParam.dog_y = new float[imageParam.GaussianDimension];
             LoadDerivativeGaussianValue(imageParam.dog_x, sigma, imageParam.GaussianDimension,1); //1 for x
             LoadDerivativeGaussianValue(imageParam.dog_y, sigma, imageParam.GaussianDimension, 0); //0 for y
-            dog_comps = new  my_image_comp[imageParam.num_comp];
+            printf("\r\n");
+            dog_x = new  my_image_comp[imageParam.num_comp];
             for (int n = 0; n < imageParam.num_comp; n++)
-                dog_comps[n].init(imageParam.height, imageParam.width, (imageParam.GaussianDimension - 1) / 2); // Don't need a border for output
+                dog_x[n].init(imageParam.height, imageParam.width, (imageParam.GaussianDimension - 1) / 2);
+            dog_y = new  my_image_comp[imageParam.num_comp];
             for (int n = 0; n < imageParam.num_comp; n++)
-                dog_comps[n].GrradientHorizontalFilter(input_comps + n, imageParam.GaussianDimension, imageParam.alpha, imageParam.dog_x);
+                dog_y[n].init(imageParam.height, imageParam.width, (imageParam.GaussianDimension - 1) / 2);
+
             for (int n = 0; n < imageParam.num_comp; n++)
-                output_comps[n].GrradientverticalFilter(dog_comps + n, imageParam.GaussianDimension, imageParam.alpha, imageParam.dog_y);
+                dog_x[n].GrradientHorizontalFilter(input_comps + n, imageParam.GaussianDimension, imageParam.alpha, imageParam.dog_x);
+            for (int n = 0; n < imageParam.num_comp; n++)
+                dog_y[n].GrradientverticalFilter(input_comps + n, imageParam.GaussianDimension, imageParam.alpha, imageParam.dog_y);
+
+            for (int i = 0; i < 3; i++) {
+                for (int y = 0; y < imageParam.height; y++) {
+                    for (int x = 0; x < imageParam.width; x++) {
+                        float* ip = dog_x[i].buf + y * dog_x[0].stride + x;
+                        float* ip_2 = dog_y[i].buf + y * dog_y[0].stride + x;
+                        float* op = output_comps[i].buf + y * output_comps[0].stride + x;
+                        float magnitude = imageParam.alpha *sqrt((*ip) * (*ip) + (*ip_2) * (*ip_2));
+                        CLAMP_TO_BYTE(magnitude);
+                        *op = magnitude;
+                       
+                    }
+                }
+                
+            }
+
             state = OUTPUT_PICTURE;
             break;
         case OUTPUT_PICTURE:

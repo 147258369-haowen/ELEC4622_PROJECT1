@@ -13,6 +13,7 @@
 #define WIDTH 5
 #define HIGHT 5
 #define PI 3.14159265
+#define CLAMP_TO_BYTE(sum) ((sum) = (sum) > 255 ? 255 : ((sum) < 0 ? 0 : (sum)))
 //#define DEBUG
 typedef enum {
     CHECK_INPUT,
@@ -69,6 +70,7 @@ struct my_image_comp {
     void vector_filter(my_image_comp* in, int dimension);
     void vector_horizontal_filter(my_image_comp* in, int dimension);
     void GrradientHorizontalFilter(my_image_comp* in, int dimension, int alpha, float* kernel);
+    void DOGFilter(my_image_comp* in, int dimension, int alpha, float* kernel);
     void GrradientverticalFilter(my_image_comp* in, int width, int alpha,float* kernel);
     // This function is implemented in "filtering_main.cpp".
 };

@@ -14,10 +14,12 @@ int main(int argc, char* argv[]) {
     io_byte* line = nullptr;
     float** matrix = nullptr;
     my_image_comp* temp_comps = nullptr;
+    my_image_comp* temp_comps_2 = nullptr;
     my_image_comp* temp_comps_out = nullptr;
     ImageParam imageParam;
     float sigma = 0;
-    float** lapkernel = allocateMatrix(3);
+    //float** lapkernel = allocateMatrix(3);
+    float* lapkernel = new float[3 * 3];
     float* LOGBuffer = nullptr;
     while (true) {
         switch (state) {
@@ -89,20 +91,52 @@ int main(int argc, char* argv[]) {
             //for (int n = 0; n < imageParam.num_comp; n++)
             //    output_comps[n].init(imageParam.height, imageParam.width, 1);
             ///**********BLUE YB[n] = X[n]*********************************/    
-            for (int i = 0; i < imageParam.width * imageParam.height; i++) {
-                output_comps[0].buf[i] = input_comps[0].buf[i];
-            }
-            /**********GREEN*********************************/
+
+            //for (int r = 0; r < output_comps[0].height; r++) {  
+            //    for (int c = 0; c < output_comps[0].width; c++)
+            //    {
+            //        float* a = output_comps[0].buf + r * output_comps[0].stride + c;
+            //        float* b = input_comps[0].buf + r * input_comps[0].stride + c;
+            //        *a = *a + *b;
+            //    }
+            //}
+
+            ///**********GREEN*********************************/
+
+
             temp_comps = new  my_image_comp;
             temp_comps->init(imageParam.height, imageParam.width, 1); // Don't need a border for output
-            temp_comps->SecondGrradientHorizontalFilter(output_comps+1, 3, &imageParam, imageParam.beta);
-            output_comps[1].SecondGrradientverticalFilter(temp_comps, 3, &imageParam, imageParam.beta);
+            temp_comps_2 = new  my_image_comp;
+            temp_comps_2->init(imageParam.height, imageParam.width, 1); // Don't need a border for output
+            temp_comps->SecondGrradientHorizontalFilter(output_comps + 1, 3, &imageParam, imageParam.beta);
+            temp_comps_2->SecondGrradientverticalFilter(output_comps+1, 3, &imageParam, imageParam.beta);
+            for (int r = 0; r < output_comps[1].height; r++) {
+                for (int c = 0; c < output_comps[1].width; c++)
+                {
+                    float* a = temp_comps->buf + r * temp_comps->stride + c;
+                    float* b = temp_comps_2->buf + r * temp_comps_2->stride + c;
+                    float* output = output_comps[1].buf + r * output_comps[1].stride + c;                
+                    float sum = (imageParam.beta * (*a + *b) + 128);
+                    CLAMP_TO_BYTE(sum);
+                    *output = sum;
+
+                }
+            }
             delete temp_comps;
+            delete temp_comps_2;
             /**********RED*********************************/
             temp_comps = new  my_image_comp;
             temp_comps->init(imageParam.height, imageParam.width, 1); // Don't need a border for output
-            temp_comps->GrradientHorizontalFilter(output_comps + 2, 3, imageParam.alpha);
-            output_comps[2].GrradientverticalFilter(temp_comps, 3, imageParam.alpha);
+            temp_comps->GradientFilter(output_comps + 2,3, imageParam.alpha);
+            for (int r = 0; r < output_comps[2].height; r++) {  //进行卷积操作
+                for (int c = 0; c < output_comps[2].width; c++)
+                {
+                    float* a = temp_comps->buf + r * temp_comps->stride + c;
+                    float* output = output_comps[2].buf + r * output_comps[2].stride + c;
+                    *output = *a;
+
+                }
+            }
             delete temp_comps;
             state = OUTPUT_PICTURE;
             break;
