@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
             for (int n = 0; n < imageParam.num_comp; n++)
                 output_comps[n].init(imageParam.height, imageParam.width, 1); // Don't need a border for output
             for (int n = 0; n < imageParam.num_comp; n++)
-                apply_filter_modified(input_comps + n, output_comps + n, LOGBuffer, imageParam.GaussianDimension);
+                apply_filter_modified_2(input_comps + n, output_comps + n, LOGBuffer, imageParam.GaussianDimension, imageParam.alpha);
             state = OUTPUT_PICTURE;
             //for (int i = 0; i < imageParam.GaussianDimension; i++) {
             //    for (int j = 0; j < imageParam.GaussianDimension; j++) {

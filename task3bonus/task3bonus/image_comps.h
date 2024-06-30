@@ -71,16 +71,20 @@ struct my_image_comp {
         float _2nd_derivative_y = (-1.0 / (2.0 * PI * pow(sigma, 4))) * (1 - ((pow(y, 2)) / (pow(sigma, 2)))) * exp(-(x * x + y * y) / (2.0 * sigma * sigma));
         return (_2nd_derivative_x + _2nd_derivative_y);
     }
+
     float* LOGKernelCreat(int dimension) {
         return new float[dimension * dimension];
     }
+
     void LoGKernelLoadValue(float* kernel, int dimension,int sigma) {
         int extent = (dimension - 1) / 2;
         float* ptr = (kernel + extent * dimension + extent);
         for (int i = -extent; i <= extent; i++) {
             for (int j = -extent; j <= extent; j++) {
                 ptr[i* dimension + j] = LaplacianGaussian(sigma, i, j);
+                printf("%f,", ptr[i * dimension + j]);
             }   
+            printf("\n");
         }
     }
 
@@ -111,6 +115,6 @@ void LoadImage(bmp_in* in, my_image_comp** input_comps, my_image_comp** output_c
     ImageParam* imageParam, int* filterChoose, char** argv);
 void MovingAverageSetValue(float** matrix, int dimension);
 int GaussianWindowDimensionChoose(float sigma);
-
+void apply_filter_modified_2(my_image_comp* in, my_image_comp* out, float* inputfilter, int width,int alpha);
 void horizontal(my_image_comp* in, my_image_comp* out, float** inputfilter, int width, int G_MF_flag);
 void vertical(my_image_comp* in, my_image_comp* out, float** inputfilter, int width, int G_MF_flag);

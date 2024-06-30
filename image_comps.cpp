@@ -272,6 +272,36 @@ void apply_filter_modified(my_image_comp* in, my_image_comp* out, float* inputfi
             for (int y = -filter_extent; y <= filter_extent; y++)//列
                 for (int x = -filter_extent; x <= filter_extent; x++)//行
                     sum += ip[y * in->stride + x] * mirror_psf[y * filter_dim + x];
+            CLAMP_TO_BYTE(sum);
+            *op = sum;
+        }
+    delete[] filter_buf;
+}
+void apply_filter_modified_2(my_image_comp* in, my_image_comp* out, float* inputfilter, int width,int alpha) {
+    int filter_extent = (width - 1) / 2;
+    int filter_dim = width;
+    int filter_taps = width * width;
+    float* filter_buf = new float[filter_taps];
+    float* mirror_psf = (filter_buf + (filter_dim * filter_extent) + filter_extent);//中间点
+    float* ptr = (inputfilter + (filter_dim * filter_extent) + filter_extent);
+    for (int i = -filter_extent; i <= filter_extent; i++) {//加载卷积核
+        for (int j = -filter_extent; j <= filter_extent; j++) {
+            mirror_psf[i * filter_dim + j] = ptr[i * filter_dim + j];
+        }
+    }
+    for (int r = 0; r < out->height; r++)//进行卷积操作
+        for (int c = 0; c < out->width; c++)
+        {
+            float* ip = in->buf + r * in->stride + c;
+            float* op = out->buf + r * out->stride + c;
+            float sum = 0.0F;
+            for (int y = -filter_extent; y <= filter_extent; y++) {
+                for (int x = -filter_extent; x <= filter_extent; x++) {
+                    sum += (alpha * ip[y * in->stride + x] * mirror_psf[y * filter_dim + x]);
+                }
+            }
+            sum += 128;
+            CLAMP_TO_BYTE(sum);
             *op = sum;
         }
     delete[] filter_buf;

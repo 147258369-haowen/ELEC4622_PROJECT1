@@ -727,7 +727,7 @@ void my_image_comp::GrradientHorizontalFilter(my_image_comp* in, int dimension, 
                 float temp = ip[x] * centralPoint[x];
                 sum += (temp);
             }
-            CLAMP_TO_BYTE(sum);
+            //CLAMP_TO_BYTE(sum);
             *op = sum;
         }
 
@@ -748,7 +748,7 @@ void my_image_comp::GrradientverticalFilter(my_image_comp* in, int width, int al
                 float temp = ip[y * in->stride] * centralPoint[y];
                 sum += (temp);
             }
-            CLAMP_TO_BYTE(sum);
+            //CLAMP_TO_BYTE(sum);
 
             *op = sum;
         }

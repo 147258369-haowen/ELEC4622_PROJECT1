@@ -105,7 +105,7 @@ int main(int argc, char* argv[]) {
                 temp_comps[n].SecondGrradientHorizontalFilter(output_comps + n, 3, &imageParam, imageParam.alpha);
             for (int n = 0; n < imageParam.num_comp; n++)//f22
                 temp_comps_2[n].SecondGrradientverticalFilter(output_comps + n, 3, &imageParam, imageParam.alpha);
-            //alpha*(f11 + f22) + 128
+            //  alpha*(f11 + f22) + 128
             for (int i = 0; i < 3; i++) {
                 for (int r = 0; r < output_comps[i].height; r++) {  //进行卷积操作
                     for (int c = 0; c < output_comps[i].width; c++)
