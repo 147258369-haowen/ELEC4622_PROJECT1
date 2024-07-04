@@ -92,14 +92,7 @@ int main(int argc, char* argv[]) {
             //    output_comps[n].init(imageParam.height, imageParam.width, 1);
             ///**********BLUE YB[n] = X[n]*********************************/    
 
-            //for (int r = 0; r < output_comps[0].height; r++) {  
-            //    for (int c = 0; c < output_comps[0].width; c++)
-            //    {
-            //        float* a = output_comps[0].buf + r * output_comps[0].stride + c;
-            //        float* b = input_comps[0].buf + r * input_comps[0].stride + c;
-            //        *a = *a + *b;
-            //    }
-            //}
+
 
             ///**********GREEN*********************************/
 

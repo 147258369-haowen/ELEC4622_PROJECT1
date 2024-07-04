@@ -282,14 +282,14 @@ void apply_filter_modified_2(my_image_comp* in, my_image_comp* out, float* input
     int filter_dim = width;
     int filter_taps = width * width;
     float* filter_buf = new float[filter_taps];
-    float* mirror_psf = (filter_buf + (filter_dim * filter_extent) + filter_extent);//中间点
+    float* mirror_psf = (filter_buf + (filter_dim * filter_extent) + filter_extent);//central point
     float* ptr = (inputfilter + (filter_dim * filter_extent) + filter_extent);
-    for (int i = -filter_extent; i <= filter_extent; i++) {//加载卷积核
+    for (int i = -filter_extent; i <= filter_extent; i++) {//Load convlution kernel
         for (int j = -filter_extent; j <= filter_extent; j++) {
             mirror_psf[i * filter_dim + j] = ptr[i * filter_dim + j];
         }
     }
-    for (int r = 0; r < out->height; r++)//进行卷积操作
+    for (int r = 0; r < out->height; r++)//convlution
         for (int c = 0; c < out->width; c++)
         {
             float* ip = in->buf + r * in->stride + c;
@@ -297,7 +297,7 @@ void apply_filter_modified_2(my_image_comp* in, my_image_comp* out, float* input
             float sum = 0.0F;
             for (int y = -filter_extent; y <= filter_extent; y++) {
                 for (int x = -filter_extent; x <= filter_extent; x++) {
-                    sum += (alpha * ip[y * in->stride + x] * mirror_psf[y * filter_dim + x]);
+                    sum += ((float)alpha * ip[y * in->stride + x] * mirror_psf[y * filter_dim + x]);
                 }
             }
             sum += 128;
@@ -830,19 +830,56 @@ void  my_image_comp::GradientFilter(my_image_comp* in, int width, int alpha) {
     int x, y;
     float gx, gy;
     float gradient;
-
+    int radius = (width - 1) / 2;
+    my_image_comp* temp_1 = new my_image_comp;
+    temp_1->init(this->height, this->width, 1);
+    my_image_comp* temp_2 = new my_image_comp;
+    temp_2->init(this->height, this->width, 1);
+    float* centralPoint = &h1D[1];
+    /**********horizontal*********/
     for (y = 0; y < this->height; y++) {
         for (x = 0; x < this->width; x++) {
-            gx = in->buf[(y * in->stride) + (x + 1)] - in->buf[(y * in->stride) + (x - 1)];
-            gy = in->buf[((y + 1) * in->stride) + x] - in->buf[((y - 1) * in->stride) + x];
-            gx *= 0.5;
-            gy *= 0.5;
-            gradient = alpha * sqrt(gx * gx + gy * gy);
-            
-            CLAMP_TO_BYTE(gradient);
-            this->buf[(y * in->stride) + x] = gradient;
+            float* ip = in->buf + y * in->stride + x;
+            float* op = temp_1->buf + y * temp_1->stride + x;
+            //mirror_psf = mirror_psf + r * out->stride + c;
+            float sum = 0.00F;
+            // for (int y = -filter_extent; y <= filter_extent; y++)//列
+            for (int j = -radius; j <= radius; j++)//行
+            {
+                float temp = ip[j] * centralPoint[j];
+                sum += temp;
+                *op = sum;
+            }
         }
     }
+    /**********vertical***********/
+    for (y = 0; y < this->width; y++) {
+        for (x = 0; x < this->height; x++) {
+            float* ip = in->buf + x * in->stride + y;
+            float* op = temp_2->buf + x * temp_2->stride + y;
+            //mirror_psf = mirror_psf + r * out->stride + c;
+            float sum = 0.00F;
+            // for (int y = -filter_extent; y <= filter_extent; y++)//列
+            for (int j = -radius; j <= radius; j++)//行
+            {
+                float temp = ip[j*in->stride] * centralPoint[j];
+                sum += temp;
+                *op = sum;
+            }
+        }
+    }
+    /*********scaled magnitude***********/
+    for (y = 0; y < this->height; y++) {
+        for (x = 0; x < this->width; x++) {
+            float temp1_x = temp_1->buf[(y * in->stride) + x];
+            float temp2_x = temp_2->buf[(y * in->stride) + x];
+            float grad = (float)alpha * sqrt(temp1_x * temp1_x + temp2_x * temp2_x);
+            CLAMP_TO_BYTE(grad);
+            this->buf[(y * in->stride) + x] = grad;
+        }
+    }
+    delete temp_1;
+    delete temp_2;
 
 }
 void my_image_comp::GrradientHorizontalFilter(my_image_comp* in, int dimension,int alpha) {

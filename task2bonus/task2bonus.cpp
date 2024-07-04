@@ -29,6 +29,8 @@ int main(int argc, char* argv[]) {
             //printf("%f\r\n", FilterInit(matrix, HIGHT, WIDTH));//归一化
             imageParam.GaussianDimension = GaussianWindowDimensionChoose(sigma);
             LoadImage(&in, &input_comps, &output_comps, &line, &imageParam, &filterChoose, argv);
+            for (int n = 0; n < imageParam.num_comp; n++)
+                input_comps[n].perform_boundary_extension();
             state = filterChoose ? DOG : MOVING_AVERAGE;
             break;
         case GAUSSIAN_FILTER:
